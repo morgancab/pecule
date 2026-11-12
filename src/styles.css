@@ -1114,9 +1114,9 @@ select.input-sm {
   display: none;
 }
 
-/* ---------- Téléphone : présentation « app » ---------- */
+/* ---------- Présentation « app » (partout : téléphone et ordinateur) ---------- */
 
-@media (max-width: 860px) {
+@media all {
   html,
   body {
     overscroll-behavior-y: none;
@@ -1372,6 +1372,30 @@ select.input-sm {
   }
   .boot {
     min-height: 100dvh;
+  }
+}
+
+/* Sur un grand écran : l'app reste au format téléphone, centrée */
+@media (min-width: 600px) {
+  .app {
+    max-width: 520px;
+    margin: 0 auto;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+  .tabbar {
+    left: calc(50% - 260px);
+    right: calc(50% - 260px);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+  .toasts {
+    left: calc(50% - 248px);
+    right: calc(50% - 248px);
+  }
+  .modal,
+  .modal.wide {
+    max-width: 520px;
   }
 }
 

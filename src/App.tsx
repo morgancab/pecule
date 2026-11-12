@@ -43,7 +43,7 @@ export function go(route: Route) {
 }
 
 export default function App() {
-  const { auth, authError, saveState, sync, syncing, notify } = useStore();
+  const { auth, authError, sync, syncing, notify } = useStore();
   const [route, setRoute] = useState<Route>(() => parse(window.location.hash));
 
   useEffect(() => {
@@ -76,33 +76,8 @@ export default function App() {
       .then(notify)
       .catch((e) => notify(`Feuille Google : ${(e as Error).message}`));
 
-  const saveLabel = {
-    saved: 'À jour avec ta feuille',
-    saving: 'Enregistrement des réglages…',
-    error: 'Réglages non enregistrés',
-    offline: 'Hors ligne : dernières données connues',
-  }[saveState];
-
   return (
     <div className="app">
-      <nav className="sidebar" aria-label="Navigation principale">
-        <div className="brand">
-          <span className="brand-mark">
-            <PiggyBank size={16} />
-          </span>
-          Pécule
-        </div>
-        {ROUTES.map(({ id, label, icon: Icon }) => (
-          <a key={id} href={`#/${id}`} className={`nav-link${route === id ? ' active' : ''}`}>
-            <Icon size={17} />
-            {label}
-          </a>
-        ))}
-        <div className="sidebar-foot">
-          <span className={`dot ${saveState === 'offline' ? 'local' : saveState}`} />
-          {saveLabel}
-        </div>
-      </nav>
       <header className="mobile-top">
         {MORE.includes(route) ? (
           <a href="#/plus" className="mobile-back" aria-label="Retour">
