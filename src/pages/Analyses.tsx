@@ -481,13 +481,11 @@ export default function Analyses() {
 function FindingRow({ f }: { f: Finding }) {
   const Icon = f.tone === 'good' ? CircleCheck : f.tone === 'info' ? Info : TriangleAlert;
   return (
-    <div className="insight" style={{ gridTemplateColumns: '34px minmax(0, 1fr)' }}>
-      <div className={`insight-icon ${f.tone === 'alert' ? 'alert' : f.tone === 'good' ? 'forte' : ''}`}>
-        <Icon size={17} />
-      </div>
-      <div style={{ minWidth: 0 }}>
-        <div className="insight-title">{f.title}</div>
-        <div className="insight-detail">{f.detail}</div>
+    <div className="list-row" style={{ alignItems: 'flex-start', padding: '14px 16px' }}>
+      <Icon size={16} className={f.tone === 'alert' ? 'bad' : f.tone === 'good' ? 'good' : f.tone === 'warn' ? 'warn' : 'muted'} style={{ marginTop: 2, flex: 'none' }} />
+      <div className="grow" style={{ minWidth: 0 }}>
+        <div style={{ fontWeight: 550 }}>{f.title}</div>
+        <div className="muted small">{f.detail}</div>
       </div>
     </div>
   );
