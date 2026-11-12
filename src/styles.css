@@ -1581,3 +1581,36 @@ details.finding[open] .chev {
     user-select: none;
   }
 }
+
+/* Calendrier des mois */
+.cal {
+  display: grid;
+  grid-template-columns: 36px repeat(12, minmax(0, 1fr));
+  gap: 4px;
+  align-items: center;
+}
+.cal-head {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+}
+.cal-year {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.cal-cell {
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+.cal-cell.empty {
+  cursor: default;
+}
+.cal-cell.on {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}

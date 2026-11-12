@@ -4,7 +4,8 @@ import { useStore } from '../store';
 import { go } from '../App';
 import { Delta, FindingList, KeyRows, Seg, SegmentedBar } from '../components/ui';
 import { NetWorthChart } from '../components/charts';
-import { addMonths, eur, eurSigned, fmtDate } from '../lib/format';
+import { addMonths, eur, eurSigned, fmtDate, pctSigned } from '../lib/format';
+import { recordInfo } from '../lib/insights';
 import { ASSET_GROUPS, totals } from '../lib/networth';
 import { slotColor } from '../lib/theme';
 import { changeOver, findings } from '../lib/analytics';
@@ -35,6 +36,7 @@ export default function Dashboard() {
   const parts = ASSET_GROUPS.map((g) => ({ id: g.id, label: g.label, value: t.byGroup[g.id] ?? 0, color: slotColor(chart, g.slot) }));
   const div = diversification(data.accounts);
   const report = buildReport(series.length - 1, series, periods, data.accounts);
+  const rec = recordInfo(series);
 
   return (
     <>
@@ -44,6 +46,11 @@ export default function Dashboard() {
         {ch && (
           <div style={{ marginTop: 4 }}>
             <Delta value={ch.amount} ratio={ch.ratio} suffix={`depuis ${fmtDate(ch.from.date)}`} />
+          </div>
+        )}
+        {rec && (
+          <div className={`small ${rec.isRecord ? 'good' : 'muted'}`} style={{ marginTop: 4 }}>
+            {rec.isRecord ? 'Nouveau record' : `${pctSigned(rec.gap)} sous ton record du ${fmtDate(rec.peak.date)} (${eur(rec.peak.net, false)})`}
           </div>
         )}
         <div style={{ marginTop: 16 }}>

@@ -8,6 +8,7 @@ import { ACCOUNT_TYPES, ASSET_GROUPS, TYPE_GROUPS, accountValue, isDebt, totals 
 import { buildSeries, changeOver } from '../lib/analytics';
 import { REFERENCES, referenceLabel, referenceOf } from '../lib/market';
 import { slotColor } from '../lib/theme';
+import { AccountMosaic } from '../components/insights';
 
 /** Patrimoine : lecture de ton tableau de suivi (Google Sheet). Les soldes se modifient dans la feuille. */
 export default function Patrimoine() {
@@ -43,6 +44,14 @@ export default function Patrimoine() {
     return v === undefined ? null : Math.abs(v);
   };
 
+  const tiles = data.accounts
+    .filter((a) => !a.archived && !isDebt(a) && accountValue(a) > 0)
+    .map((a) => {
+      const v = accountValue(a);
+      const ya = valueYearAgo(a);
+      return { id: a.id, label: a.name, value: v, change: ya ? v / ya - 1 : null };
+    });
+
   return (
     <>
       <div className="card">
@@ -61,6 +70,15 @@ export default function Patrimoine() {
           </div>
         )}
       </div>
+
+      {tiles.length > 1 && (
+        <div className="card section">
+          <div className="card-head">
+            <div className="card-title">Tes comptes en un coup d’œil</div>
+          </div>
+          <AccountMosaic tiles={tiles} onSelect={(id) => setEditing(data.accounts.find((a) => a.id === id) ?? null)} />
+        </div>
+      )}
 
       {!groups.length && !archived.length && (
         <div className="card section">

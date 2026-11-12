@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useStore } from '../store';
 import { go } from '../App';
-import { Empty, KeyRows, Note, Seg } from '../components/ui';
+import { Empty, KeyRows, Note, RankBars, Seg, SegmentedBar } from '../components/ui';
 import { AllocationChart, NetWorthChart, RealChart, SimpleLine, SourcesChart } from '../components/charts';
-import { eur, eurSigned, fmtDate, monthShort, pct, pctSigned } from '../lib/format';
+import { BridgeChart, MonthCalendar } from '../components/insights';
+import { bridge, climbSpeed, monthlyGrid } from '../lib/insights';
+import { eur, eurCompact, eurSigned, fmtDate, monthLabel, monthShort, monthsBetween, pct, pctSigned } from '../lib/format';
 import { ASSET_GROUPS } from '../lib/networth';
 import { slotColor } from '../lib/theme';
 import { changeOver, maxDrawdown, type Point } from '../lib/analytics';
@@ -63,10 +65,10 @@ type Market = ReturnType<typeof useMarket>['market'];
 function Evolution({ series, periods, market }: { series: Point[]; periods: Periods; market: Market }) {
   const { chart } = useStore();
   const [byStatement, setByStatement] = useState(false);
+  const [bridgeFrom, setBridgeFrom] = useState<'annee' | '12m'>('annee');
   const last = series[series.length - 1];
   const first = series[0];
   const c12 = changeOver(series, 12);
-  const s12 = sumPeriods(periods, c12?.from.date ?? first.date);
   const sAll = sumPeriods(periods, '0000');
   const totalGrowth = sAll.savings + sAll.market + sAll.interest;
 
@@ -83,26 +85,44 @@ function Evolution({ series, periods, market }: { series: Point[]; periods: Peri
   const riskyDD = maxDrawdown(series.map((p) => ({ date: p.date, value: (p.groups.investissements ?? 0) + (p.groups.crypto ?? 0) })));
   const ddSub = (dd: NonNullable<typeof netDD>) => `${fmtDate(dd.peakDate)} → ${fmtDate(dd.troughDate)} · ${dd.recovered ? 'rattrapée' : 'pas encore rattrapée'}`;
 
+  const year = last.date.slice(0, 4);
+  const br = bridge(series, periods, bridgeFrom === 'annee' ? `${Number(year) - 1}-12-31` : (c12?.from.date ?? first.date));
+  const months = Math.max(1, Math.round(monthsBetween(br.start.date, br.end.date)));
+  const grid = monthlyGrid(series);
+  const speed = climbSpeed(series);
+  const done = speed?.tranches.filter((x) => x.end) ?? [];
+  const current = speed?.tranches.find((x) => !x.end);
+  const maxMonths = Math.max(1, ...(speed?.tranches.map((x) => x.months) ?? [1]));
+  const monthsLabel = (m: number) => (m < 1 ? '< 1 mois' : `${Math.round(m)} mois`);
+
   return (
     <>
       <div className="card section">
         <div className="card-head">
-          <div className="card-title">12 derniers mois</div>
+          <div>
+            <div className="card-title">{bridgeFrom === 'annee' ? `Ton année ${year}` : 'Tes 12 derniers mois'}</div>
+            <div className="card-sub">
+              {eur(br.start.net, false)} au {fmtDate(br.start.date)} → {eur(br.end.net, false)}
+            </div>
+          </div>
         </div>
-        <KeyRows
-          rows={[
-            {
-              label: 'Variation',
-              sub: c12 ? `depuis ${fmtDate(c12.from.date)}` : undefined,
-              value: c12 ? eurSigned(c12.amount, false) : '—',
-              valueSub: c12 ? pctSigned(c12.ratio) : undefined,
-              tone: c12 ? (c12.amount >= 0 ? 'good' : 'bad') : '',
-            },
-            { label: 'Épargne nouvelle', value: market ? eur(s12.savings, false) : '…', valueSub: market && s12.months ? `${eur(s12.savings / s12.months, false)}/mois` : undefined },
-            { label: 'Effet des marchés', value: market ? eurSigned(s12.market, false) : '…', tone: market ? (s12.market >= 0 ? 'good' : 'bad') : '' },
-            { label: 'Intérêts', value: market ? eurSigned(s12.interest, false) : '…' },
-          ]}
-        />
+        <div className={`stat-value ${br.total >= 0 ? 'good' : 'bad'}`}>
+          {eurSigned(br.total, false)}
+          <span className="muted small" style={{ fontWeight: 400, marginLeft: 8 }}>
+            {pctSigned(br.start.net ? br.total / br.start.net : 0)} · {eur(br.savings / months, false)}/mois d’épargne
+          </span>
+        </div>
+        {market ? <BridgeChart savings={br.savings} market={br.market} interest={br.interest} /> : <p className="muted small">Chargement des cours…</p>}
+        <div style={{ marginTop: 12 }}>
+          <Seg<'annee' | '12m'>
+            value={bridgeFrom}
+            onChange={setBridgeFrom}
+            options={[
+              { value: 'annee', label: 'Cette année' },
+              { value: '12m', label: '12 mois' },
+            ]}
+          />
+        </div>
       </div>
 
       <div className="card section">
@@ -124,6 +144,43 @@ function Evolution({ series, periods, market }: { series: Point[]; periods: Peri
           />
         </div>
       </div>
+
+      <div className="card section">
+        <div className="card-head">
+          <div>
+            <div className="card-title">Mois par mois</div>
+            <div className="card-sub">
+              {grid.up} mois en hausse sur {grid.count} · meilleur : {monthLabel(grid.best[0])} ({eurSigned(grid.best[1], false)})
+            </div>
+          </div>
+        </div>
+        <MonthCalendar cells={grid.cells} years={grid.years} />
+      </div>
+
+      {speed && (
+        <div className="card section">
+          <div className="card-head">
+            <div>
+              <div className="card-title">Vitesse d’enrichissement</div>
+              <div className="card-sub">
+                Temps pour chaque tranche de {eurCompact(speed.step)}
+                {done.length >= 2 && ` : ${monthsLabel(done[done.length - 1].months)} pour la dernière, contre ${monthsLabel(done[0].months)} pour la première`}
+              </div>
+            </div>
+          </div>
+          <RankBars
+            rows={speed.tranches.map((x) => ({
+              id: String(x.from),
+              label: `${eurCompact(x.from)} → ${eurCompact(x.to)}`,
+              value: x.months,
+              dim: !x.end,
+              display: x.end ? monthsLabel(x.months) : <span className="muted">en cours · {monthsLabel(x.months)}</span>,
+            }))}
+            max={maxMonths}
+          />
+          {current && <p className="muted small" style={{ margin: '12px 0 0' }}>Il te manque {eur(current.to - last.net, false)} pour atteindre {eur(current.to, false)}.</p>}
+        </div>
+      )}
 
       <div className="card section">
         <div className="card-head">
@@ -277,9 +334,14 @@ function Placements({ series, periods, market }: { series: Point[]; periods: Per
 }
 
 function Epargne({ series, market }: { series: Point[]; market: Market }) {
-  const { data } = useStore();
+  const { data, chart } = useStore();
   const first = series[0];
   const last = series[series.length - 1];
+  const assets = Object.entries(last.groups)
+    .filter(([g]) => g !== 'dette')
+    .reduce((s, [, v]) => s + Math.max(0, v), 0);
+  const idle = Math.max(0, last.groups.liquidites ?? 0);
+  const liqColor = slotColor(chart, ASSET_GROUPS.find((g) => g.id === 'liquidites')!.slot);
   const drag = cashDrag(data.accounts, series);
   const inflationRows = market?.inflation.length ? savingsVsInflation(market.inflation, Number(first.date.slice(0, 4)), last.date) : [];
 
@@ -287,7 +349,19 @@ function Epargne({ series, market }: { series: Point[]; market: Market }) {
     <>
       <div className="card section">
         <div className="card-head">
-          <div className="card-title">Argent qui dort</div>
+          <div>
+            <div className="card-title">Ton argent travaille-t-il ?</div>
+            {assets > 0 && <div className="card-sub">{pct(idle / assets, 0)} de ton patrimoine ne rapporte rien</div>}
+          </div>
+        </div>
+        <SegmentedBar
+          parts={[
+            { id: 'idle', label: 'Comptes courants et cash', value: idle, color: liqColor },
+            { id: 'work', label: 'Placé ou épargné', value: assets - idle, color: chart.neutral },
+          ]}
+        />
+        <div className="card-title" style={{ margin: '20px 0 12px' }}>
+          Argent qui dort
         </div>
         <KeyRows
           rows={[
