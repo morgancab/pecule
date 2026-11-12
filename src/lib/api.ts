@@ -16,7 +16,8 @@ async function call<T>(method: string, url: string, body?: unknown): Promise<T> 
   return j as T;
 }
 
-export const getSession = () => call<{ authenticated: boolean; configured: boolean; error?: string; sheet: boolean }>('GET', '/api/session');
+export const getSession = () => call<{ authenticated: boolean; configured: boolean; error?: string; sheet: boolean; push: string | null }>('GET', '/api/session');
+export const pushTest = (endpoint: string) => call<{ ok: true }>('POST', '/api/push-test', { endpoint });
 export const login = (password: string) => call<{ ok: true }>('POST', '/api/login', { password });
 export const logout = () => call<{ ok: true }>('POST', '/api/logout', {});
 export const getSheet = () => call<{ sheet: string; values: string[][]; prefs: unknown }>('GET', '/api/sheet');

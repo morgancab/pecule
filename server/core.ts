@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { marketData } from './market.js';
+import { isPushEndpoint, parisDay, sendPush } from './push.js';
 
 /**
  * API de Pécule, identique en local (plugin Vite) et sur Vercel (fonctions /api).
@@ -16,6 +17,10 @@ export interface Env {
   SESSION_SECRET?: string;
   GSHEET_URL?: string;
   GSHEET_TOKEN?: string;
+  VAPID_PUBLIC_KEY?: string;
+  VAPID_PRIVATE_KEY?: string;
+  VAPID_SUBJECT?: string;
+  CRON_SECRET?: string; // Vercel l'envoie dans « Authorization: Bearer … » aux tâches planifiées
 }
 
 export interface ApiRequest {
@@ -25,6 +30,7 @@ export interface ApiRequest {
   cookie: string;
   body: string;
   secure: boolean; // HTTPS (cookie Secure)
+  authorization?: string;
 }
 
 export interface ApiResponse {
@@ -106,13 +112,34 @@ async function sheetCall(env: Env, init?: { prefs: unknown }): Promise<any> {
   return j;
 }
 
+// ---------- Rappel mensuel ----------
+
+/** Envoie le rappel aux appareils abonnés si c'est le jour choisi (heure de Paris). Retire les abonnements expirés. */
+async function remind(env: Env) {
+  const j = await sheetCall(env);
+  const prefs = j?.prefs ?? null;
+  const reminder = prefs?.settings?.reminder as { day?: number; subs?: { endpoint: string }[] } | undefined;
+  const subs = (reminder?.subs ?? []).filter((x) => x && isPushEndpoint(String(x.endpoint)));
+  if (!reminder || !subs.length) return { sent: 0, reason: 'aucun appareil abonné' };
+  const { day, lastDay } = parisDay();
+  const target = Math.min(Math.max(1, Math.round(Number(reminder.day) || 7)), lastDay);
+  if (day !== target) return { sent: 0, reason: `rappel prévu le ${target}` };
+  const results = await Promise.all(subs.map(async (x) => ({ endpoint: x.endpoint, status: await sendPush(x, env).catch(() => 0) })));
+  const expired = new Set(results.filter((r) => r.status === 404 || r.status === 410).map((r) => r.endpoint));
+  if (expired.size) {
+    prefs.settings.reminder.subs = reminder.subs!.filter((x) => !expired.has(x.endpoint));
+    await sheetCall(env, { prefs });
+  }
+  return { sent: results.filter((r) => r.status >= 200 && r.status < 300).length, removed: expired.size };
+}
+
 // ---------- Routeur ----------
 
 export async function handle(req: ApiRequest, env: Env): Promise<ApiResponse> {
   const cfg = configError(env);
 
   if (req.path === '/api/session') {
-    return json(200, { authenticated: !cfg && isAuthenticated(req, env), configured: !cfg, error: cfg ?? undefined, sheet: !!(env.GSHEET_URL && env.GSHEET_TOKEN) });
+    return json(200, { authenticated: !cfg && isAuthenticated(req, env), configured: !cfg, error: cfg ?? undefined, sheet: !!(env.GSHEET_URL && env.GSHEET_TOKEN), push: env.VAPID_PUBLIC_KEY || null });
   }
 
   if (req.path === '/api/login' && req.method === 'POST') {
@@ -134,6 +161,16 @@ export async function handle(req: ApiRequest, env: Env): Promise<ApiResponse> {
     return json(200, { ok: true }, { 'Set-Cookie': `${COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${req.secure ? '; Secure' : ''}` });
   }
 
+  // Rappel mensuel : appelé chaque jour par la tâche planifiée Vercel (vercel.json → crons), protégé par CRON_SECRET
+  if (req.path === '/api/remind') {
+    if (!env.CRON_SECRET || !safeEqual(req.authorization || '', `Bearer ${env.CRON_SECRET}`)) return json(401, { error: 'Accès refusé.' });
+    try {
+      return json(200, await remind(env));
+    } catch (e) {
+      return json(502, { error: (e as Error).message });
+    }
+  }
+
   // Tout le reste exige une session
   if (cfg) return json(500, { error: cfg });
   if (!isAuthenticated(req, env)) return json(401, { error: 'Session expirée : reconnecte-toi.' });
@@ -149,6 +186,14 @@ export async function handle(req: ApiRequest, env: Env): Promise<ApiResponse> {
       const prefs = JSON.parse(req.body || '{}');
       if (JSON.stringify(prefs).length > 8000) return json(413, { error: 'Réglages trop volumineux.' });
       await sheetCall(env, { prefs });
+      return json(200, { ok: true });
+    }
+
+    if (req.path === '/api/push-test' && req.method === 'POST') {
+      const endpoint = String(JSON.parse(req.body || '{}').endpoint ?? '');
+      if (!isPushEndpoint(endpoint)) return json(400, { error: 'Abonnement invalide.' });
+      const status = await sendPush({ endpoint }, env);
+      if (status >= 300) return json(502, { error: `Le service de notifications a répondu ${status}.` });
       return json(200, { ok: true });
     }
 
@@ -198,6 +243,7 @@ export async function nodeHandler(req: IncomingMessage, res: ServerResponse, env
         cookie: String(req.headers.cookie || ''),
         body: req.method === 'GET' ? '' : await readBody(req),
         secure: proto === 'https' || !!process.env.VERCEL,
+        authorization: String(req.headers.authorization || ''),
       },
       env,
     );
@@ -214,4 +260,8 @@ export const envFromProcess = (): Env => ({
   SESSION_SECRET: process.env.SESSION_SECRET,
   GSHEET_URL: process.env.GSHEET_URL,
   GSHEET_TOKEN: process.env.GSHEET_TOKEN,
+  VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
+  VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
+  VAPID_SUBJECT: process.env.VAPID_SUBJECT,
+  CRON_SECRET: process.env.CRON_SECRET,
 });

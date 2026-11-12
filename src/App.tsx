@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ChartLine, ChartPie, ChevronRight, Ellipsis, Eye, EyeOff, FileText, LayoutDashboard, Lock, PiggyBank, RefreshCw, Settings as SettingsIcon, TrendingUp, Wallet } from 'lucide-react';
+import { CalendarRange, ChartLine, ChartPie, ChevronRight, Ellipsis, Eye, EyeOff, FileText, LayoutDashboard, Lock, PiggyBank, RefreshCw, Settings as SettingsIcon, TrendingUp, Users, Wallet } from 'lucide-react';
 import { useStore } from './store';
+import { usePullToRefresh } from './lib/usePullToRefresh';
 import { Toasts } from './components/ui';
 import Dashboard from './pages/Dashboard';
 import Patrimoine from './pages/Patrimoine';
@@ -9,8 +10,10 @@ import Projection from './pages/Projection';
 import Diversification from './pages/Diversification';
 import Rapports from './pages/Rapports';
 import Reglages from './pages/Reglages';
+import Bilan from './pages/Bilan';
+import Comparaison from './pages/Comparaison';
 
-export type Route = 'dashboard' | 'patrimoine' | 'analyses' | 'projection' | 'diversification' | 'rapports' | 'reglages' | 'plus';
+export type Route = 'dashboard' | 'patrimoine' | 'analyses' | 'projection' | 'diversification' | 'rapports' | 'bilan' | 'comparaison' | 'reglages' | 'plus';
 
 const ROUTES: { id: Route; label: string; icon: typeof Wallet }[] = [
   { id: 'dashboard', label: 'Accueil', icon: LayoutDashboard },
@@ -19,6 +22,8 @@ const ROUTES: { id: Route; label: string; icon: typeof Wallet }[] = [
   { id: 'projection', label: 'Projection', icon: TrendingUp },
   { id: 'diversification', label: 'Diversification', icon: ChartPie },
   { id: 'rapports', label: 'Rapports', icon: FileText },
+  { id: 'bilan', label: 'Ton année', icon: CalendarRange },
+  { id: 'comparaison', label: 'Face aux Français', icon: Users },
   { id: 'reglages', label: 'Réglages', icon: SettingsIcon },
 ];
 
@@ -30,7 +35,7 @@ const TABS: { id: Route; label: string; icon: typeof Wallet }[] = [
   { id: 'projection', label: 'Projection', icon: TrendingUp },
   { id: 'plus', label: 'Plus', icon: Ellipsis },
 ];
-const MORE: Route[] = ['diversification', 'rapports', 'reglages'];
+const MORE: Route[] = ['diversification', 'rapports', 'bilan', 'comparaison', 'reglages'];
 
 function parse(hash: string): Route {
   const id = hash.replace(/^#\/?/, '').split('?')[0];
@@ -55,6 +60,12 @@ export default function App() {
     return () => window.removeEventListener('hashchange', h);
   }, []);
 
+  const doSync = () =>
+    sync()
+      .then(notify)
+      .catch((e) => notify(`Feuille Google : ${(e as Error).message}`));
+  const { pull, ready } = usePullToRefresh(() => !syncing && doSync(), auth !== 'ready');
+
   if (auth === 'checking') return <div className="boot">Chargement…</div>;
   if (auth === 'login') return <Login />;
   if (auth === 'misconfigured') return <Misconfigured error={authError} />;
@@ -66,15 +77,13 @@ export default function App() {
     projection: <Projection />,
     diversification: <Diversification />,
     rapports: <Rapports />,
+    bilan: <Bilan />,
+    comparaison: <Comparaison />,
     reglages: <Reglages />,
     plus: <More />,
   }[route];
   const title = route === 'plus' ? 'Plus' : ROUTES.find((r) => r.id === route)?.label ?? 'Pécule';
   const activeTab = MORE.includes(route) ? 'plus' : route;
-  const doSync = () =>
-    sync()
-      .then(notify)
-      .catch((e) => notify(`Feuille Google : ${(e as Error).message}`));
 
   return (
     <div className="app">
@@ -97,6 +106,12 @@ export default function App() {
         </span>
       </header>
       {hidden && <div className="hidden-banner">Montants masqués · seuls les % sont visibles</div>}
+      {(pull > 0 || syncing) && (
+        <div className="ptr" style={{ height: syncing ? 44 : pull }} aria-live="polite">
+          <RefreshCw size={20} className={syncing ? 'spin' : ''} style={{ transform: syncing ? undefined : `rotate(${pull * 3}deg)`, opacity: syncing || ready ? 1 : 0.5 }} />
+          {!syncing && <span className="small">{ready ? 'Relâche pour synchroniser' : 'Tire pour synchroniser'}</span>}
+        </div>
+      )}
       {/* la clé force le re-rendu complet (axes des graphiques compris) quand on masque ou affiche */}
       <main className="main" key={hidden ? 'masque' : 'visible'}>
         {page}

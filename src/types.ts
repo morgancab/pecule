@@ -129,6 +129,11 @@ export interface Settings {
     inflation?: number;
   };
   lastSync?: string;
+  birthYear?: number; // pour se comparer aux ménages de son âge (INSEE)
+  reminder?: {
+    day: number; // jour du mois (1-28)
+    subs: { endpoint: string; keys?: Record<string, string> }[]; // abonnements push des appareils
+  };
 }
 
 export interface AppData {

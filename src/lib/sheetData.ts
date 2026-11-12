@@ -12,7 +12,7 @@ type AccountPrefs = Partial<Pick<Account, 'name' | 'type' | 'institution' | 'rat
 
 export interface Prefs {
   v: 1;
-  settings?: Partial<Pick<Settings, 'theme' | 'projection' | 'investRate' | 'investYears'>>;
+  settings?: Partial<Pick<Settings, 'theme' | 'projection' | 'investRate' | 'investYears' | 'birthYear' | 'reminder'>>;
   accounts?: Record<string, AccountPrefs>; // clé : colonne d'origine dans la feuille
 }
 
@@ -22,8 +22,8 @@ export function prefsOf(d: AppData): Prefs {
     if (!a.source) continue;
     accounts[a.source] = { name: a.name, type: a.type, institution: a.institution, rate: a.rate, ticker: a.ticker, tickerExact: a.tickerExact, archived: a.archived };
   }
-  const { theme, projection, investRate, investYears } = d.settings;
-  return { v: 1, settings: { theme, projection, investRate, investYears }, accounts };
+  const { theme, projection, investRate, investYears, birthYear, reminder } = d.settings;
+  return { v: 1, settings: { theme, projection, investRate, investYears, birthYear, reminder }, accounts };
 }
 
 export function buildFromSheet(values: string[][], prefs: Prefs | null, previous?: AppData): { data: AppData; parsed: HistoryParse } {

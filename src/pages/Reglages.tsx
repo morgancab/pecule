@@ -2,6 +2,7 @@ import { Download, LogOut, RefreshCw } from 'lucide-react';
 import { useStore } from '../store';
 import type { ThemePref } from '../types';
 import { Seg } from '../components/ui';
+import { Reminder } from '../components/Reminder';
 import { todayISO } from '../lib/format';
 
 export default function Reglages() {
@@ -64,6 +65,9 @@ export default function Reglages() {
           </span>
         </button>
       </div>
+
+      <div className="section-title section">Notifications</div>
+      <Reminder />
 
       <div className="ios-list section">
         <button className="ios-row bad" onClick={() => confirm('Se déconnecter de cet appareil ?') && logout()}>

@@ -1646,3 +1646,147 @@ details.finding[open] .chev {
   font-size: 12px;
   text-align: center;
 }
+
+/* Tirer pour synchroniser */
+.ptr {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  overflow: hidden;
+  color: var(--text-2);
+}
+
+/* Ton année : écrans à faire défiler */
+.story {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  gap: 0;
+}
+.story::-webkit-scrollbar {
+  display: none;
+}
+.story-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+  cursor: pointer;
+}
+.story-label {
+  color: var(--text-2);
+  font-size: 14px;
+}
+.story-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 16px 0;
+}
+.story-big {
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.story-name {
+  font-size: 32px;
+}
+.story-unit {
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text-2);
+}
+.story-text {
+  margin: 12px 0 0;
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.story-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.story-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.story-dots button {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: var(--border-strong);
+  cursor: pointer;
+  transition: width 0.15s ease-out, background-color 0.15s ease-out;
+}
+.story-dots button.on {
+  width: 20px;
+  background: var(--accent);
+}
+
+/* Échelle de comparaison (INSEE) */
+.scale {
+  position: relative;
+  height: 96px;
+  margin: 24px 8px 0;
+}
+.scale-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 36px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--track);
+}
+.scale-mark {
+  position: absolute;
+  top: 30px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.scale-tick {
+  width: 2px;
+  height: 18px;
+  background: var(--muted);
+}
+.scale-label {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: center;
+  white-space: nowrap;
+}
+.scale-me {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+.scale-me::after {
+  content: '';
+  width: 14px;
+  height: 14px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+}

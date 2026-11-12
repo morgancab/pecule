@@ -58,6 +58,8 @@ Le script doit pouvoir lire la feuille **et** enregistrer tes réglages.
    | `SESSION_SECRET` | 32+ caractères aléatoires (ex. sortie de `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`) |
    | `GSHEET_URL` | l’adresse `/exec` du script |
    | `GSHEET_TOKEN` | le même jeton que dans le script |
+   | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | *(rappel mensuel, facultatif)* générées par `node scripts/vapid.mjs` |
+   | `CRON_SECRET` | *(rappel mensuel)* donné par la même commande : Vercel l’envoie à la tâche planifiée `/api/remind` (tous les jours à 7 h UTC, voir `vercel.json`) |
 4. Redéploie (Deployments → … → Redeploy) pour prendre en compte les variables.
 
 Sans ces variables, l’app affiche « Configuration incomplète » et ne sert aucune donnée.
@@ -73,18 +75,21 @@ Connecte-toi une fois : la session dure 6 mois sur l’appareil. « Se déconnec
 
 | Page | Ce qu’elle fait |
 |---|---|
-| Tableau de bord | Patrimoine net et évolution, répartition, épargne estimée par mois, effet des marchés et intérêts sur 12 mois, argent qui dort, dernier rapport, diversification, points d’attention |
-| Patrimoine | Comptes lus depuis la feuille, rangés par classe, variation sur 12 mois. Fiche d’un compte : nom affiché, type, taux, référence de marché, clôture |
-| Analyses | D’où vient ta progression (épargne / marchés / intérêts), euros constants, actions Amazon (cours vs actions reçues), placements face à leur référence, argent qui dort, livrets face à l’inflation, répartition dans le temps, projection, plus fortes baisses, points d’attention, détail par compte |
-| Projection | Simulateur : épargne mensuelle, rendement par classe d’actifs, horizon, euros courants ou d’aujourd’hui ; scénarios prudent / central / favorable, prochains paliers, « et si… » |
-| Diversification | Score sur 10 (classes d’actifs, géographie, secteurs, concentration) |
-| Rapports | Un rapport par relevé : variation, part épargne / marchés, comparaison, comptes qui ont bougé, record, répartition avant / après |
-| Réglages | Thème, synchronisation, déconnexion, export JSON |
+| Accueil | Patrimoine net, distance au record, courbe, répartition, 12 derniers mois (épargne, marchés, argent qui dort), points à surveiller |
+| Patrimoine | Mosaïque des comptes (taille = montant, couleur = 12 mois), comptes rangés par classe. Fiche d’un compte : nom, type, taux, référence de marché, clôture |
+| Analyses · Évolution | Cascade de l’année ou des 12 mois, d’où vient la progression, mois par mois (avec total annuel), vitesse d’enrichissement, euros constants, répartition dans le temps, plus fortes baisses |
+| Analyses · Placements | Comptes face à leur référence de marché, actions Amazon (cours vs actions reçues) |
+| Analyses · Épargne | Argent qui travaille ou qui dort, livrets face à l’inflation |
+| Projection | Montant à l’horizon et scénarios, épargne mensuelle et horizon, hypothèses, prochains paliers datés, « et si… » |
+| Plus | Diversification, Rapports, Ton année (résumé à faire défiler), Face aux Français (INSEE, selon l’âge), Réglages (thème, synchro, rappel mensuel, export, déconnexion) |
+
+Bouton œil (en haut) : mode discret, tous les montants en euros sont masqués, les % restent visibles. Tirer vers le bas en haut d’une page relance la synchronisation.
 
 ## Données publiques utilisées
 
 - Cours de clôture quotidiens (Yahoo Finance), convertis en euros, selon les références choisies (Amazon, MSCI World, S&P 500, Bitcoin, Ethereum).
 - Indice des prix harmonisé France (Eurostat).
+- Patrimoine des ménages selon l’âge (INSEE, enquête Histoire de vie et Patrimoine, début 2024), dans `src/lib/insights.ts`.
 - Taux officiels du Livret A : table dans `src/lib/market.ts`, à compléter à chaque révision (février et août).
 
 Seuls les symboles des indices sont envoyés à ces services.

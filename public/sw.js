@@ -1,6 +1,29 @@
 // Service worker de Pécule : met en cache uniquement l'interface (HTML, JS, CSS, icônes),
 // jamais les données (/api/* passe toujours par le réseau et reste protégé par la session).
-const CACHE = 'pecule-shell-v1';
+const CACHE = 'pecule-shell-v2';
+
+// Rappel mensuel : la notification arrive SANS contenu (rien ne transite par Apple ou Google), le texte est ici.
+self.addEventListener('push', (event) => {
+  event.waitUntil(
+    self.registration.showNotification('Pécule', {
+      body: 'C’est le moment de remplir ton relevé du mois dans ta feuille.',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: 'pecule-rappel',
+      data: { url: '/' },
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const open = list.find((c) => new URL(c.url).origin === self.location.origin);
+      return open ? open.focus() : self.clients.openWindow('/');
+    }),
+  );
+});
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/manifest.webmanifest', '/icons/icon-192.png'])));
