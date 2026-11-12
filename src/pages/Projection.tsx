@@ -76,6 +76,10 @@ export default function Projection() {
   const deflate = (v: number, month: number) => (real ? v / Math.pow(1 + inflation / 100, month / 12) : v);
   const sim = (shift = {}, inp: ProjectionInput = input) => simulate(inp, shift).map((p) => ({ ...p, net: deflate(p.net, p.month) }));
   const runs = { prudent: sim(SCENARIOS.prudent.shift), central: sim(), favorable: sim(SCENARIOS.favorable.shift) };
+  // Paliers : simulation longue, indépendante de l'horizon affiché, pour toujours donner une date
+  const LONG_YEARS = 60;
+  const long = { ...input, years: LONG_YEARS };
+  const longRuns = { prudent: sim(SCENARIOS.prudent.shift, long), central: sim({}, long), favorable: sim(SCENARIOS.favorable.shift, long) };
   const end = runs.central[runs.central.length - 1];
   const at = (y: number) => runs.central[Math.min(runs.central.length - 1, y * 12)];
 
@@ -104,8 +108,8 @@ export default function Projection() {
   };
   const nextMilestone = milestones[0];
   const whatIf = [
-    { label: '+100 € d’épargne par mois', delta: variant({ monthly: monthly + 100 }), date: nextMilestone ? reachDate(sim({}, { ...input, monthly: monthly + 100 }), nextMilestone) : null },
-    { label: '+300 € d’épargne par mois', delta: variant({ monthly: monthly + 300 }), date: nextMilestone ? reachDate(sim({}, { ...input, monthly: monthly + 300 }), nextMilestone) : null },
+    { label: '+100 € d’épargne par mois', delta: variant({ monthly: monthly + 100 }), date: nextMilestone ? reachDate(sim({}, { ...long, monthly: monthly + 100 }), nextMilestone) : null },
+    { label: '+300 € d’épargne par mois', delta: variant({ monthly: monthly + 300 }), date: nextMilestone ? reachDate(sim({}, { ...long, monthly: monthly + 300 }), nextMilestone) : null },
     ...(drag.excessNow > 1000
       ? [
           { label: `Placer l’argent qui dort (${eur(drag.excessNow, false)}) sur des livrets`, delta: moveCash('epargne'), date: null },
@@ -224,7 +228,7 @@ export default function Projection() {
         <div className="card flush">
           <div style={{ padding: '16px 16px 4px' }}>
             <div className="card-title">Prochains paliers</div>
-            <div className="card-sub">Date où chaque montant serait atteint</div>
+            <div className="card-sub">Date où chaque montant serait atteint, au même rythme</div>
           </div>
           <div className="table-wrap">
             <table className="table">
@@ -239,12 +243,12 @@ export default function Projection() {
               <tbody>
                 {milestones.map((m) => (
                   <tr key={m}>
-                    <td style={{ fontWeight: 550 }}>{eur(m, false)}</td>
+                    <td style={{ fontWeight: 500 }}>{eur(m, false)}</td>
                     {(['prudent', 'central', 'favorable'] as const).map((k) => {
-                      const d = reachDate(runs[k], m);
+                      const d = reachDate(longRuns[k], m);
                       return (
                         <td key={k} className={`num ${k === 'central' ? '' : 'muted'}`} style={k === 'central' ? { fontWeight: 600 } : undefined}>
-                          {d ? fmtDate(d, true).replace(/^\d+ /, '') : `> ${years} ans`}
+                          {d ? fmtDate(d, true).replace(/^\d+ /, '') : `> ${LONG_YEARS} ans`}
                         </td>
                       );
                     })}
