@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { useStore } from '../store';
-import { eur, eurCompact, eurSigned, monthLabel, pctSigned } from '../lib/format';
+import { MASK, amountsHidden, eur, eurCompact, eurSigned, monthLabel, pctSigned } from '../lib/format';
 
 // ---------- Mosaïque des comptes (treemap « squarified », taille = montant, couleur = variation 12 mois) ----------
 
@@ -150,6 +150,7 @@ const MONTHS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
 /** +15,2 k€ : montant court pour la colonne des totaux annuels. */
 function kSigned(n: number) {
+  if (amountsHidden()) return `${n > 0 ? '+' : n < 0 ? '−' : ''}${MASK} €`;
   const s = Math.abs(n) < 1000 ? `${Math.round(Math.abs(n))} €` : `${(Math.abs(n) / 1000).toFixed(1).replace('.', ',')} k€`;
   return (n > 0 ? '+' : n < 0 ? '−' : '') + s;
 }

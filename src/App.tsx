@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChartLine, ChartPie, ChevronRight, Ellipsis, FileText, LayoutDashboard, Lock, PiggyBank, RefreshCw, Settings as SettingsIcon, TrendingUp, Wallet } from 'lucide-react';
+import { ChartLine, ChartPie, ChevronRight, Ellipsis, Eye, EyeOff, FileText, LayoutDashboard, Lock, PiggyBank, RefreshCw, Settings as SettingsIcon, TrendingUp, Wallet } from 'lucide-react';
 import { useStore } from './store';
 import { Toasts } from './components/ui';
 import Dashboard from './pages/Dashboard';
@@ -43,7 +43,7 @@ export function go(route: Route) {
 }
 
 export default function App() {
-  const { auth, authError, sync, syncing, notify } = useStore();
+  const { auth, authError, sync, syncing, notify, hidden, toggleHidden } = useStore();
   const [route, setRoute] = useState<Route>(() => parse(window.location.hash));
 
   useEffect(() => {
@@ -87,11 +87,20 @@ export default function App() {
           <span className="mobile-back" />
         )}
         <span className="mobile-title">{title}</span>
-        <button className="mobile-action" onClick={doSync} disabled={syncing} aria-label="Synchroniser la feuille">
-          <RefreshCw size={19} className={syncing ? 'spin' : ''} />
-        </button>
+        <span className="mobile-actions">
+          <button className={`mobile-action${hidden ? ' on' : ''}`} onClick={toggleHidden} aria-pressed={hidden} aria-label={hidden ? 'Afficher les montants' : 'Masquer les montants'}>
+            {hidden ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+          <button className="mobile-action" onClick={doSync} disabled={syncing} aria-label="Synchroniser la feuille">
+            <RefreshCw size={19} className={syncing ? 'spin' : ''} />
+          </button>
+        </span>
       </header>
-      <main className="main">{page}</main>
+      {hidden && <div className="hidden-banner">Montants masqués · seuls les % sont visibles</div>}
+      {/* la clé force le re-rendu complet (axes des graphiques compris) quand on masque ou affiche */}
+      <main className="main" key={hidden ? 'masque' : 'visible'}>
+        {page}
+      </main>
       <nav className="tabbar" aria-label="Navigation">
         {TABS.map(({ id, label, icon: Icon }) => (
           <a key={id} href={`#/${id}`} className={`tab${activeTab === id ? ' active' : ''}`}>

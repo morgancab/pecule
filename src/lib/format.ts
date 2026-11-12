@@ -3,8 +3,24 @@ const eur0Fmt = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'E
 const compactFmt = new Intl.NumberFormat('fr-FR', { notation: 'compact', maximumFractionDigits: 1 });
 const numFmt = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 8 });
 
+// ---------- Mode discret : les montants en euros sont remplacés, les % restent visibles ----------
+
+let hidden = false;
+export const MASK = '•••';
+export function setAmountsHidden(v: boolean) {
+  hidden = v;
+}
+export function amountsHidden() {
+  return hidden;
+}
+/** Quantité qui permettrait de retrouver un montant (ex. nombre d'actions). */
+export function qty(n: number): string {
+  return hidden ? MASK : n.toFixed(0);
+}
+
 /** 1 234,56 € */
 export function eur(n: number, decimals = true): string {
+  if (hidden) return `${MASK} €`;
   return (decimals ? eurFmt : eur0Fmt).format(Number.isFinite(n) ? n : 0);
 }
 
@@ -17,6 +33,7 @@ export function eurSigned(n: number, decimals = true): string {
 
 /** 12 k€ pour les axes */
 export function eurCompact(n: number): string {
+  if (hidden) return `${MASK} €`;
   if (Math.abs(n) < 10000) return eur(n, false);
   return compactFmt.format(n) + ' €';
 }

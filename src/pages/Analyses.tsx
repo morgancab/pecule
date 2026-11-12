@@ -5,7 +5,7 @@ import { Empty, KeyRows, Note, RankBars, Seg, SegmentedBar } from '../components
 import { AllocationChart, NetWorthChart, RealChart, SimpleLine, SourcesChart } from '../components/charts';
 import { BridgeChart, MonthCalendar } from '../components/insights';
 import { bridge, climbSpeed, monthlyGrid } from '../lib/insights';
-import { eur, eurCompact, eurSigned, fmtDate, monthLabel, monthShort, monthsBetween, pct, pctSigned } from '../lib/format';
+import { eur, eurCompact, eurSigned, fmtDate, monthLabel, monthShort, monthsBetween, pct, pctSigned, qty } from '../lib/format';
 import { ASSET_GROUPS } from '../lib/networth';
 import { slotColor } from '../lib/theme';
 import { changeOver, maxDrawdown, type Point } from '../lib/analytics';
@@ -303,20 +303,20 @@ function Placements({ series, periods, market }: { series: Point[]; periods: Per
               <div>
                 <div className="card-title">{a.name}</div>
                 <div className="card-sub">
-                  ≈ {now.shares.toFixed(0)} actions à {eur(now.price)}
+                  ≈ {qty(now.shares)} actions à {eur(now.price)}
                 </div>
               </div>
             </div>
             <KeyRows
               rows={[
                 { label: 'Effet du cours', sub: '12 derniers mois', value: eurSigned(priceEffect, false), tone: priceEffect >= 0 ? 'good' : 'bad' },
-                { label: 'Actions reçues ou vendues', sub: `${dShares >= 0 ? '+' : ''}${dShares.toFixed(0)} actions`, value: eurSigned(sharesEffect, false) },
+                { label: 'Actions reçues ou vendues', sub: `${dShares >= 0 ? '+' : '−'}${qty(Math.abs(dShares))} actions`, value: eurSigned(sharesEffect, false) },
               ]}
             />
             <div className="field-label" style={{ margin: '16px 0 4px' }}>
               Nombre d’actions
             </div>
-            <SimpleLine rows={r.map((x) => ({ date: x.date, value: x.shares }))} valueFormat={(v) => v.toFixed(0)} />
+            <SimpleLine rows={r.map((x) => ({ date: x.date, value: x.shares }))} valueFormat={(v) => qty(v)} />
             <div className="field-label" style={{ margin: '16px 0 4px' }}>
               Cours en euros
             </div>

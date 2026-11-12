@@ -4,7 +4,7 @@ import { emptyData, ensureShape } from './lib/data';
 import { CHART, type ChartTheme } from './lib/theme';
 import { AuthError, getSession, getSheet, login as apiLogin, logout as apiLogout, putPrefs } from './lib/api';
 import { buildFromSheet, prefsOf, type Prefs } from './lib/sheetData';
-import { fmtDate } from './lib/format';
+import { fmtDate, setAmountsHidden } from './lib/format';
 
 /**
  * État de l'app :
@@ -15,6 +15,7 @@ import { fmtDate } from './lib/format';
 
 const CACHE_KEY = 'pecule-cache';
 const LS_THEME = 'pecule-theme';
+const LS_HIDDEN = 'pecule-hide-amounts';
 
 export type SaveState = 'saved' | 'saving' | 'error' | 'offline';
 export type AuthState = 'checking' | 'login' | 'misconfigured' | 'ready';
@@ -40,6 +41,9 @@ interface Store {
   notify: (message: string, action?: Toast['action']) => void;
   toasts: Toast[];
   dismissToast: (id: number) => void;
+  /** Mode discret : montants en euros masqués (les % restent visibles). Mémorisé sur cet appareil. */
+  hidden: boolean;
+  toggleHidden: () => void;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -67,6 +71,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [syncing, setSyncing] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [systemLight, setSystemLight] = useState(() => window.matchMedia('(prefers-color-scheme: light)').matches);
+  const [hidden, setHidden] = useState(() => {
+    try {
+      return localStorage.getItem(LS_HIDDEN) === '1';
+    } catch {
+      return false;
+    }
+  });
+  setAmountsHidden(hidden); // avant le rendu des pages : tous les montants passent par lib/format
+  const toggleHidden = useCallback(() => {
+    setHidden((h) => {
+      try {
+        localStorage.setItem(LS_HIDDEN, h ? '0' : '1');
+      } catch {
+        /* ignore */
+      }
+      return !h;
+    });
+  }, []);
   const savedPrefs = useRef<string | null>(null); // réglages tels qu'enregistrés côté Google
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -201,8 +223,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<Store>(
-    () => ({ data, update, sync, syncing, saveState, auth, authError, login, logout, theme, chart: CHART[theme], notify, toasts, dismissToast }),
-    [data, update, sync, syncing, saveState, auth, authError, login, logout, theme, notify, toasts, dismissToast],
+    () => ({ data, update, sync, syncing, saveState, auth, authError, login, logout, theme, chart: CHART[theme], notify, toasts, dismissToast, hidden, toggleHidden }),
+    [data, update, sync, syncing, saveState, auth, authError, login, logout, theme, notify, toasts, dismissToast, hidden, toggleHidden],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

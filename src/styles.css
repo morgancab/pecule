@@ -1154,7 +1154,7 @@ select.input-sm {
   /* Barre de titre (sous l'encoche) */
   .mobile-top {
     display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    grid-template-columns: 88px minmax(0, 1fr) 88px;
     align-items: center;
     position: sticky;
     top: 0;
@@ -1625,4 +1625,24 @@ details.finding[open] .chev {
 .cal-head.cal-total {
   display: block;
   text-align: right;
+}
+
+/* Mode discret */
+.mobile-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.mobile-action[aria-pressed] {
+  color: var(--text-2);
+}
+.mobile-action.on {
+  color: var(--accent);
+}
+.hidden-banner {
+  padding: 6px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 12px;
+  text-align: center;
 }
