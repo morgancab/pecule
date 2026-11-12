@@ -148,7 +148,12 @@ export function parseHistory(text: string, today: string): HistoryParse | { erro
   };
 
   // 3. Dates (on ignore les lignes futures, souvent pré-remplies)
+  // … et les lignes pas encore remplies (blocs préparés à l'avance : date + une ou deux cellules)
+  const filled = (i: number) => rows[i].filter((s, c) => c !== dateCol && typeof cellValue(s) === 'number').length;
+  const counts = dateRowIdx.map(filled).sort((a, b) => a - b);
+  const minFilled = Math.max(3, Math.floor(counts[Math.floor(counts.length / 2)] / 2));
   const dated = dateRowIdx
+    .filter((i) => filled(i) >= minFilled)
     .map((i) => ({ i, date: parseDateAs(rows[i][dateCol], order)! }))
     .filter((x) => !!x.date);
   const future = dated.filter((x) => x.date > today).length;
