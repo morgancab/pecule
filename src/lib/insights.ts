@@ -58,7 +58,15 @@ export function monthlyGrid(series: Point[]) {
   const best = values.reduce((m, e) => (e[1] > m[1] ? e : m), values[0]);
   const worst = values.reduce((m, e) => (e[1] < m[1] ? e : m), values[0]);
   const up = values.filter((e) => e[1] > 0).length;
-  return { cells, years, best, worst, up, count: values.length };
+  // Total par année, en % du patrimoine au début de l'année (dernier relevé de l'année précédente)
+  const yearTotals = new Map<string, { amount: number; ratio: number }>();
+  for (const y of years) {
+    const start = [...series].reverse().find((p) => p.date < `${y}-01-01`) ?? series[0];
+    const end = [...series].reverse().find((p) => p.date <= `${y}-12-31`)!;
+    const amount = end.net - start.net;
+    yearTotals.set(y, { amount, ratio: start.net ? amount / start.net : 0 });
+  }
+  return { cells, years, yearTotals, best, worst, up, count: values.length };
 }
 
 // ---------- Cascade : du patrimoine de départ à aujourd'hui ----------

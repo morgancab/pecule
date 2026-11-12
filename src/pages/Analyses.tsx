@@ -154,7 +154,7 @@ function Evolution({ series, periods, market }: { series: Point[]; periods: Peri
             </div>
           </div>
         </div>
-        <MonthCalendar cells={grid.cells} years={grid.years} />
+        <MonthCalendar cells={grid.cells} years={grid.years} yearTotals={grid.yearTotals} />
       </div>
 
       {speed && (

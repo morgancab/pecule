@@ -1585,8 +1585,8 @@ details.finding[open] .chev {
 /* Calendrier des mois */
 .cal {
   display: grid;
-  grid-template-columns: 36px repeat(12, minmax(0, 1fr));
-  gap: 4px;
+  grid-template-columns: 32px repeat(12, minmax(0, 1fr)) 56px;
+  gap: 3px;
   align-items: center;
 }
 .cal-head {
@@ -1613,4 +1613,16 @@ details.finding[open] .chev {
 .cal-cell.on {
   outline: 2px solid var(--text);
   outline-offset: 1px;
+}
+.cal-total {
+  display: grid;
+  justify-items: end;
+  font-size: 11px;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cal-head.cal-total {
+  display: block;
+  text-align: right;
 }

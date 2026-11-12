@@ -148,7 +148,13 @@ function clip(s: string, px: number) {
 
 const MONTHS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
-export function MonthCalendar({ cells, years }: { cells: Map<string, number>; years: string[] }) {
+/** +15,2 k€ : montant court pour la colonne des totaux annuels. */
+function kSigned(n: number) {
+  const s = Math.abs(n) < 1000 ? `${Math.round(Math.abs(n))} €` : `${(Math.abs(n) / 1000).toFixed(1).replace('.', ',')} k€`;
+  return (n > 0 ? '+' : n < 0 ? '−' : '') + s;
+}
+
+export function MonthCalendar({ cells, years, yearTotals }: { cells: Map<string, number>; years: string[]; yearTotals: Map<string, { amount: number; ratio: number }> }) {
   const { chart } = useStore();
   const [up, down] = [chart.series[0], chart.series[7]];
   const keys = [...cells.keys()].sort();
@@ -165,6 +171,7 @@ export function MonthCalendar({ cells, years }: { cells: Map<string, number>; ye
             {m}
           </span>
         ))}
+        <span className="cal-head cal-total">Année</span>
         {years.map((y) => (
           <Row key={y} year={y}>
             {MONTHS.map((_, i) => {
@@ -185,6 +192,16 @@ export function MonthCalendar({ cells, years }: { cells: Map<string, number>; ye
                 />
               );
             })}
+            {(() => {
+              const t = yearTotals.get(y);
+              if (!t) return <span />;
+              return (
+                <span className="cal-total" title={`${y} : ${eurSigned(t.amount, false)} (${pctSigned(t.ratio)})`}>
+                  <span className={t.amount >= 0 ? 'good' : 'bad'}>{kSigned(t.amount)}</span>
+                  <span className="muted">{pctSigned(t.ratio, 0)}</span>
+                </span>
+              );
+            })()}
           </Row>
         ))}
       </div>
