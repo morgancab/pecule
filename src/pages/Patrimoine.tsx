@@ -55,7 +55,7 @@ export default function Patrimoine() {
             {`Lu depuis ta feuille Google${lastDate ? ` · dernier relevé le ${fmtDate(lastDate)}` : ''}${syncLabel ? ` · synchronisé le ${syncLabel}` : ''}. Pour changer un solde, modifie la feuille.`}
           </p>
         </div>
-        <div className="actions">
+        <div className="actions desktop-only">
           <button className="btn btn-primary" onClick={sync} disabled={syncing}>
             <RefreshCw size={15} className={syncing ? 'spin' : ''} /> {syncing ? 'Synchronisation…' : 'Synchroniser'}
           </button>
@@ -107,10 +107,10 @@ export default function Patrimoine() {
                             <div className="muted small">
                               {meta.label}
                               {a.institution && ` · ${a.institution}`}
-                              {last && ` · relevé du ${fmtDate(last)}`}
+                              {last && <span className="hide-sm">{` · relevé du ${fmtDate(last)}`}</span>}
                             </div>
                           </td>
-                          <td className="num">
+                          <td className="num hide-sm">
                             {a.rate ? (
                               <div className="small text-2">
                                 {String(a.rate).replace('.', ',')} % {!isDebt(a) && <span className="muted">≈ {eur((value * a.rate) / 100, false)}/an</span>}
@@ -121,11 +121,18 @@ export default function Patrimoine() {
                               </span>
                             ) : null}
                           </td>
-                          <td className="num" style={{ fontWeight: 600, width: 140 }}>
+                          <td className="num nowrap" style={{ fontWeight: 600, width: 140 }}>
                             {isDebt(a) ? '−' : ''}
                             {eur(Math.abs(value))}
+                            <div className="show-sm small" style={{ fontWeight: 400 }}>
+                              {a.rate ? (
+                                <span className="text-2">{String(a.rate).replace('.', ',')} %</span>
+                              ) : ya !== null ? (
+                                <Delta value={value - ya} />
+                              ) : null}
+                            </div>
                           </td>
-                          <td style={{ width: 44 }}>
+                          <td className="hide-sm" style={{ width: 44 }}>
                             <Pencil size={15} className="muted" />
                           </td>
                         </tr>

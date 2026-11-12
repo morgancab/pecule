@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChartLine, ChartPie, FileText, LayoutDashboard, Lock, PiggyBank, Settings as SettingsIcon, TrendingUp, Wallet } from 'lucide-react';
+import { ChartLine, ChartPie, ChevronRight, Ellipsis, FileText, LayoutDashboard, Lock, PiggyBank, RefreshCw, Settings as SettingsIcon, TrendingUp, Wallet } from 'lucide-react';
 import { useStore } from './store';
 import { Toasts } from './components/ui';
 import Dashboard from './pages/Dashboard';
@@ -10,7 +10,7 @@ import Diversification from './pages/Diversification';
 import Rapports from './pages/Rapports';
 import Reglages from './pages/Reglages';
 
-export type Route = 'dashboard' | 'patrimoine' | 'analyses' | 'projection' | 'diversification' | 'rapports' | 'reglages';
+export type Route = 'dashboard' | 'patrimoine' | 'analyses' | 'projection' | 'diversification' | 'rapports' | 'reglages' | 'plus';
 
 const ROUTES: { id: Route; label: string; icon: typeof Wallet }[] = [
   { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -22,8 +22,19 @@ const ROUTES: { id: Route; label: string; icon: typeof Wallet }[] = [
   { id: 'reglages', label: 'Réglages', icon: SettingsIcon },
 ];
 
+// Sur téléphone : 4 onglets principaux + « Plus » pour le reste
+const TABS: { id: Route; label: string; icon: typeof Wallet }[] = [
+  { id: 'dashboard', label: 'Accueil', icon: LayoutDashboard },
+  { id: 'patrimoine', label: 'Patrimoine', icon: Wallet },
+  { id: 'analyses', label: 'Analyses', icon: ChartLine },
+  { id: 'projection', label: 'Projection', icon: TrendingUp },
+  { id: 'plus', label: 'Plus', icon: Ellipsis },
+];
+const MORE: Route[] = ['diversification', 'rapports', 'reglages'];
+
 function parse(hash: string): Route {
   const id = hash.replace(/^#\/?/, '').split('?')[0];
+  if (id === 'plus') return 'plus';
   return (ROUTES.find((r) => r.id === id)?.id ?? 'dashboard') as Route;
 }
 
@@ -32,7 +43,7 @@ export function go(route: Route) {
 }
 
 export default function App() {
-  const { auth, authError, saveState } = useStore();
+  const { auth, authError, saveState, sync, syncing, notify } = useStore();
   const [route, setRoute] = useState<Route>(() => parse(window.location.hash));
 
   useEffect(() => {
@@ -56,7 +67,14 @@ export default function App() {
     diversification: <Diversification />,
     rapports: <Rapports />,
     reglages: <Reglages />,
+    plus: <More />,
   }[route];
+  const title = route === 'plus' ? 'Plus' : ROUTES.find((r) => r.id === route)?.label ?? 'Pécule';
+  const activeTab = MORE.includes(route) ? 'plus' : route;
+  const doSync = () =>
+    sync()
+      .then(notify)
+      .catch((e) => notify(`Feuille Google : ${(e as Error).message}`));
 
   const saveLabel = {
     saved: 'À jour avec ta feuille',
@@ -85,9 +103,54 @@ export default function App() {
           {saveLabel}
         </div>
       </nav>
+      <header className="mobile-top">
+        {MORE.includes(route) ? (
+          <a href="#/plus" className="mobile-back" aria-label="Retour">
+            ‹
+          </a>
+        ) : (
+          <span className="mobile-back" />
+        )}
+        <span className="mobile-title">{title}</span>
+        <button className="mobile-action" onClick={doSync} disabled={syncing} aria-label="Synchroniser la feuille">
+          <RefreshCw size={19} className={syncing ? 'spin' : ''} />
+        </button>
+      </header>
       <main className="main">{page}</main>
+      <nav className="tabbar" aria-label="Navigation">
+        {TABS.map(({ id, label, icon: Icon }) => (
+          <a key={id} href={`#/${id}`} className={`tab${activeTab === id ? ' active' : ''}`}>
+            <Icon size={22} strokeWidth={activeTab === id ? 2.2 : 1.8} />
+            <span>{label}</span>
+          </a>
+        ))}
+      </nav>
       <Toasts />
     </div>
+  );
+}
+
+/** Page « Plus » (téléphone) : liste à la iOS des pages secondaires. */
+function More() {
+  const { saveState } = useStore();
+  const items = ROUTES.filter((r) => MORE.includes(r.id));
+  return (
+    <>
+      <div className="ios-list">
+        {items.map(({ id, label, icon: Icon }) => (
+          <a key={id} href={`#/${id}`} className="ios-row">
+            <span className="ios-icon">
+              <Icon size={18} />
+            </span>
+            <span className="grow">{label}</span>
+            <ChevronRight size={18} className="muted" />
+          </a>
+        ))}
+      </div>
+      <p className="muted small" style={{ textAlign: 'center', marginTop: 20 }}>
+        {saveState === 'offline' ? 'Hors ligne : dernières données connues' : 'Données à jour avec ta feuille Google'}
+      </p>
+    </>
   );
 }
 

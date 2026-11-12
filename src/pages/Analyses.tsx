@@ -242,25 +242,34 @@ export default function Analyses() {
               <thead>
                 <tr>
                   <th>Compte</th>
-                  <th>Référence</th>
-                  <th className="num">Référence sur 12 mois</th>
-                  <th className="num">Effet marché</th>
-                  <th className="num">Apports nets</th>
-                  <th className="num">Valeur</th>
+                  <th className="hide-sm">Référence</th>
+                  <th className="num">
+                    <span className="hide-sm">Référence sur 12 mois</span>
+                    <span className="show-sm">Indice</span>
+                  </th>
+                  <th className="num">
+                    <span className="hide-sm">Effet marché</span>
+                    <span className="show-sm">Marché</span>
+                  </th>
+                  <th className="num">
+                    <span className="hide-sm">Apports nets</span>
+                    <span className="show-sm">Apports</span>
+                  </th>
+                  <th className="num hide-sm">Valeur</th>
                 </tr>
               </thead>
               <tbody>
                 {tracked.map((t) => (
                   <tr key={t.a.id}>
                     <td style={{ fontWeight: 550 }}>{t.a.name}</td>
-                    <td className="muted">
+                    <td className="muted hide-sm">
                       {referenceLabel(t.ref.ticker)}
                       {t.ref.exact ? '' : ' (indice)'}
                     </td>
                     <td className={`num ${t.refPerf12 === null ? '' : t.refPerf12 >= 0 ? 'good' : 'bad'}`}>{t.refPerf12 === null ? '—' : pctSigned(t.refPerf12)}</td>
                     <td className={`num ${t.market >= 0 ? 'good' : 'bad'}`}>{eurSigned(t.market, false)}</td>
                     <td className="num">{eurSigned(t.savings, false)}</td>
-                    <td className="num" style={{ fontWeight: 600 }}>
+                    <td className="num hide-sm" style={{ fontWeight: 600 }}>
                       {eur(t.value, false)}
                     </td>
                   </tr>
@@ -436,8 +445,8 @@ export default function Analyses() {
               <tr>
                 <th>Compte</th>
                 <th className="num">Valeur</th>
-                <th className="num">Part</th>
-                <th className="num">3 mois</th>
+                <th className="num hide-sm">Part</th>
+                <th className="num hide-sm">3 mois</th>
                 <th className="num">12 mois</th>
               </tr>
             </thead>
@@ -456,8 +465,8 @@ export default function Analyses() {
                   <td className="num" style={{ fontWeight: 600 }}>
                     {eur(v, false)}
                   </td>
-                  <td className="num muted">{v > 0 && assets ? pct(v / assets, 0) : '—'}</td>
-                  <td className={`num ${d3 === null ? '' : d3 >= 0 ? 'good' : 'bad'}`}>{d3 === null ? '—' : eurSigned(d3, false)}</td>
+                  <td className="num muted hide-sm">{v > 0 && assets ? pct(v / assets, 0) : '—'}</td>
+                  <td className={`num hide-sm ${d3 === null ? '' : d3 >= 0 ? 'good' : 'bad'}`}>{d3 === null ? '—' : eurSigned(d3, false)}</td>
                   <td className={`num ${d12 === null ? '' : d12 >= 0 ? 'good' : 'bad'}`}>{d12 === null ? '—' : eurSigned(d12, false)}</td>
                 </tr>
               ))}

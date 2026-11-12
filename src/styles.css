@@ -1106,55 +1106,316 @@ select.input-sm {
   }
 }
 
+/* ---------- Éléments propres au téléphone (masqués sur ordinateur) ---------- */
+
+.mobile-top,
+.tabbar,
+.show-sm {
+  display: none;
+}
+
+/* ---------- Téléphone : présentation « app » ---------- */
+
 @media (max-width: 860px) {
-  .app {
-    grid-template-columns: minmax(0, 1fr);
+  html,
+  body {
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    font-size: 15px;
   }
-  .sidebar {
+  .app {
+    display: block; /* pas de grille : la barre du haut ne s'étire plus sur les pages courtes */
+    min-height: 100dvh;
+  }
+  .show-sm {
+    display: block;
+  }
+  span.show-sm {
+    display: inline;
+  }
+  .delta {
+    flex-wrap: wrap;
+    row-gap: 0;
+    font-size: 13px;
+  }
+  .table td.num .delta {
+    justify-content: flex-end;
+  }
+  .table th {
+    white-space: nowrap;
+  }
+  .sidebar,
+  .desktop-only,
+  .hide-sm {
+    display: none !important;
+  }
+
+  /* Barre de titre (sous l'encoche) */
+  .mobile-top {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    align-items: center;
     position: sticky;
     top: 0;
-    z-index: 20;
-    height: auto;
-    flex-direction: row;
-    overflow-x: auto;
-    padding: 8px 12px;
-    border-right: none;
+    z-index: 30;
+    padding: calc(env(safe-area-inset-top) + 6px) 8px 8px;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(18px);
+    backdrop-filter: saturate(180%) blur(18px);
     border-bottom: 1px solid var(--border);
   }
-  .brand,
-  .sidebar-foot,
-  .nav-count {
-    display: none;
+  .mobile-title {
+    text-align: center;
+    font-weight: 650;
+    font-size: 17px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+  .mobile-back,
+  .mobile-action {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: none;
+    background: transparent;
+    color: var(--accent);
+    font-size: 32px;
+    line-height: 1;
+    text-decoration: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .mobile-back:hover {
+    text-decoration: none;
+  }
+  .mobile-action:disabled {
+    opacity: 0.5;
+  }
+
+  /* Barre d'onglets (au-dessus de la barre d'accueil iOS) */
+  .tabbar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    padding: 6px 4px calc(env(safe-area-inset-bottom) + 4px);
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(18px);
+    backdrop-filter: saturate(180%) blur(18px);
+    border-top: 1px solid var(--border);
+  }
+  .tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 0;
+    color: var(--muted);
+    font-size: 10.5px;
+    font-weight: 550;
+    text-decoration: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .tab:hover {
+    text-decoration: none;
+  }
+  .tab.active {
+    color: var(--accent);
+  }
+
+  /* Contenu */
   .main {
-    padding: 20px 16px 64px;
+    padding: 12px 14px calc(80px + env(safe-area-inset-bottom));
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+  }
+  .page-header {
+    margin-bottom: 12px;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .page-title {
+    display: none; /* le titre est dans la barre du haut */
+  }
+  .page-sub {
+    margin: 0;
+    font-size: 12.5px;
+  }
+  .section {
+    margin-top: 14px;
+  }
+  .grid {
+    gap: 10px;
   }
   .cols-2,
   .cols-3,
-  .cols-4,
-  .steps,
   .form-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* chiffres clés en 2 colonnes */
   }
   .span-2 {
     grid-column: auto;
   }
-  .hero-value {
-    font-size: 40px;
+  .card {
+    padding: 14px;
+    border-radius: 14px;
   }
+  .card.tight {
+    padding: 12px;
+  }
+  .card-head {
+    margin-bottom: 10px;
+  }
+  .stat-label {
+    font-size: 12px;
+  }
+  .stat-value {
+    font-size: 18px;
+  }
+  .stat-sub {
+    font-size: 11.5px;
+  }
+  .hero-value {
+    font-size: 36px;
+  }
+  .section-title {
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+
+  /* Tableaux compacts */
+  .table {
+    font-size: 13px;
+  }
+  .table th,
+  .table td {
+    padding: 9px 10px;
+  }
+
+  /* Contrôles tactiles (16 px minimum : pas de zoom automatique de Safari) */
+  input,
+  select,
+  textarea,
+  .input-sm,
+  select.input-sm {
+    font-size: 16px;
+  }
+  input:not([type='range']):not([type='checkbox']),
+  select {
+    height: 40px;
+  }
+  .btn {
+    height: 40px;
+  }
+  .btn-sm {
+    height: 34px;
+  }
+  .seg button {
+    height: 30px;
+    padding: 0 12px;
+  }
+  input[type='range'] {
+    height: 28px;
+    width: 100%;
+  }
+
+  /* Fenêtres : feuille qui monte du bas */
+  .backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modal,
+  .modal.wide {
+    max-width: none;
+    border-radius: 18px 18px 0 0;
+    max-height: 92dvh;
+    overflow-y: auto;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .modal-foot {
+    position: sticky;
+    bottom: 0;
+    background: var(--surface);
+  }
+
+  .toasts {
+    left: 12px;
+    right: 12px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    max-width: none;
+  }
+
   .insight {
     grid-template-columns: minmax(0, 1fr);
+    padding: 14px;
   }
   .insight-icon {
     display: none;
   }
-  .insight-saving {
-    text-align: left;
-  }
-  .detected {
-    grid-template-columns: minmax(0, 1fr);
-  }
   .rank-row {
-    grid-template-columns: minmax(90px, 120px) minmax(0, 1fr) auto;
+    grid-template-columns: minmax(80px, 110px) minmax(0, 1fr) auto;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .legend-row {
+    font-size: 13px;
+  }
+  .boot {
+    min-height: 100dvh;
+  }
+}
+
+/* Liste façon iOS (page « Plus ») */
+.ios-list {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.ios-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  color: var(--text);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+  font-size: 16px;
+}
+.ios-row:last-child {
+  border-bottom: none;
+}
+.ios-row:hover {
+  text-decoration: none;
+  background: var(--surface-2);
+}
+.ios-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+/* App installée (écran d'accueil) : pas de sélection de texte accidentelle sur la navigation */
+@media (display-mode: standalone) {
+  .sidebar,
+  .tabbar,
+  .mobile-top {
+    -webkit-user-select: none;
+    user-select: none;
   }
 }

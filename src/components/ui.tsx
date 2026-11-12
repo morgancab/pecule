@@ -60,9 +60,9 @@ export function Delta({ value, ratio, upIsGood = true, suffix }: { value: number
   return (
     <span className={`delta ${cls}`}>
       {up ? <TrendingUp size={15} /> : down ? <TrendingDown size={15} /> : null}
-      {eurSigned(value)}
-      {ratio !== undefined && Number.isFinite(ratio) && <span>({pctSigned(ratio)})</span>}
-      {suffix && <span className="muted" style={{ fontWeight: 400 }}>{suffix}</span>}
+      <span className="nowrap">{eurSigned(value)}</span>
+      {ratio !== undefined && Number.isFinite(ratio) && <span className="nowrap">({pctSigned(ratio)})</span>}
+      {suffix && <span className="muted delta-suffix" style={{ fontWeight: 400 }}>{suffix}</span>}
     </span>
   );
 }
