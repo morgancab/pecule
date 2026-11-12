@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useStore } from '../store';
-import { KeyRows, Note } from '../components/ui';
-import { amountsHidden, eur, eurCompact } from '../lib/format';
+import { KeyRows, Note, RankBars } from '../components/ui';
+import { AgeRanges, PercentileGauge } from '../components/compare';
+import { amountsHidden, eur } from '../lib/format';
 import { totals } from '../lib/networth';
 import { INSEE_2024, percentileIn } from '../lib/insights';
 
@@ -18,16 +19,11 @@ export default function Comparaison() {
 
   const age = thisYear - birthYear;
   const b = INSEE_2024.rows.find((r) => age >= r.min && age <= r.max) ?? INSEE_2024.rows[0];
-  const t = totals(data.accounts);
-  const mine = t.assets; // l'INSEE mesure le patrimoine BRUT (dettes non déduites)
+  const mine = totals(data.accounts).assets; // l'INSEE mesure le patrimoine BRUT (dettes non déduites)
   const pos = percentileIn(mine, b);
   const posAll = percentileIn(mine, INSEE_2024.all);
   const headline = pos.above9 ? 'Dans les 10 % les plus aisés' : pos.below1 ? 'Parmi les 10 % les plus modestes' : `Devant ${Math.round(pos.p)} % des ménages`;
-
-  // échelle logarithmique pour placer « toi » entre les déciles
-  const lo = Math.min(b.d1, mine) / 1.6;
-  const hi = Math.max(b.d9, mine) * 1.6;
-  const x = (v: number) => `${(100 * Math.log(Math.max(v, lo) / lo)) / Math.log(hi / lo)}%`;
+  const byBracket = INSEE_2024.rows.map((r) => ({ r, pos: percentileIn(mine, r) }));
 
   return (
     <>
@@ -35,38 +31,51 @@ export default function Comparaison() {
         <div className="hero-label">
           Ménages de {b.label.toLowerCase()} · tu as {age} ans
         </div>
-        <div className="stat-value" style={{ fontSize: 28, marginTop: 4 }}>
-          {headline}
+        <div style={{ margin: '12px 0 4px' }}>
+          <PercentileGauge p={pos.above9 ? 95 : pos.p} label={pos.above9 ? 'au-delà du 9e décile' : 'des ménages de ton âge ont moins'} />
         </div>
-        <p className="muted small" style={{ margin: '4px 0 0' }}>
-          {pos.above9 || pos.below1 ? 'de ta tranche d’âge, d’après l’INSEE' : 'de ta tranche d’âge ont un patrimoine plus faible que le tien (estimation)'}
-        </p>
-
-        <div className="scale" aria-hidden="true">
-          <div className="scale-track" />
-          {[
-            { v: b.d1, l: '10 %' },
-            { v: b.median, l: 'Médiane' },
-            { v: b.d9, l: '90 %' },
-          ].map((m) => (
-            <div className="scale-mark" key={m.l} style={{ left: x(m.v) }}>
-              <span className="scale-tick" />
-              <span className="scale-label">
-                {m.l}
-                <br />
-                {eurCompact(m.v)}
-              </span>
-            </div>
-          ))}
-          <div className="scale-me" style={{ left: x(mine) }}>
-            <span>Toi</span>
+        {(pos.above9 || pos.below1) && (
+          <div className="stat-value" style={{ textAlign: 'center' }}>
+            {headline}
           </div>
-        </div>
+        )}
+        <p className="muted small" style={{ margin: '4px 0 0', textAlign: 'center' }}>
+          Estimation d’après l’INSEE
+        </p>
       </div>
 
       <div className="card section">
         <div className="card-head">
-          <div className="card-title">Ta tranche d’âge</div>
+          <div>
+            <div className="card-title">Toi face à chaque âge</div>
+            <div className="card-sub">Trait : du 1er au 9e décile · point : médiane</div>
+          </div>
+        </div>
+        <AgeRanges rows={INSEE_2024.rows} mine={mine} current={b.id} />
+      </div>
+
+      <div className="card section">
+        <div className="card-head">
+          <div>
+            <div className="card-title">Ta position dans chaque tranche</div>
+            <div className="card-sub">Part des ménages qui ont moins que toi</div>
+          </div>
+        </div>
+        <RankBars
+          rows={byBracket.map(({ r, pos: p }) => ({
+            id: r.id,
+            label: r.id === b.id ? <strong>{r.label}</strong> : r.label,
+            value: p.above9 ? 90 : p.p,
+            dim: r.id !== b.id,
+            display: p.above9 ? '> 90 %' : p.below1 ? '< 10 %' : `${Math.round(p.p)} %`,
+          }))}
+          max={100}
+        />
+      </div>
+
+      <div className="card section">
+        <div className="card-head">
+          <div className="card-title">Repères de ta tranche</div>
         </div>
         <KeyRows
           rows={[
@@ -75,42 +84,12 @@ export default function Comparaison() {
             { label: '10 % les plus aisés', sub: 'à partir de', value: eur(b.d9, false) },
             {
               label: 'Tous âges confondus',
-              sub: 'médiane de l’ensemble des ménages',
-              value: eur(INSEE_2024.all.median, false),
-              valueSub: posAll.above9 ? 'tu es dans les 10 % du haut' : `tu es devant ~${Math.round(posAll.p)} %`,
+              sub: `médiane : ${eur(INSEE_2024.all.median, false)}`,
+              value: posAll.above9 ? '> 90 %' : `${Math.round(posAll.p)} %`,
+              valueSub: 'ont moins que toi',
             },
           ]}
         />
-      </div>
-
-      <div className="card flush section">
-        <div style={{ padding: '16px 16px 4px' }}>
-          <div className="card-title">Selon l’âge</div>
-          <div className="card-sub">Patrimoine brut des ménages, début 2024</div>
-        </div>
-        <div className="table-wrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Âge</th>
-                <th className="num">Médiane</th>
-                <th className="num">10 % du haut</th>
-              </tr>
-            </thead>
-            <tbody>
-              {INSEE_2024.rows.map((r) => (
-                <tr key={r.id} style={r.id === b.id ? { fontWeight: 600 } : undefined}>
-                  <td>
-                    {r.label}
-                    {r.id === b.id && <span className="muted"> · toi</span>}
-                  </td>
-                  <td className="num">{eur(r.median, false)}</td>
-                  <td className="num">{eur(r.d9, false)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </div>
 
       <Note title="Source et limites">
