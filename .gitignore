@@ -1,0 +1,10 @@
+node_modules
+dist
+*.log
+.vercel
+
+# Données et secrets personnels : ne jamais les versionner
+data/
+.env
+.env.*
+!.env.example
