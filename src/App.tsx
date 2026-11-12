@@ -13,7 +13,7 @@ import Reglages from './pages/Reglages';
 export type Route = 'dashboard' | 'patrimoine' | 'analyses' | 'projection' | 'diversification' | 'rapports' | 'reglages' | 'plus';
 
 const ROUTES: { id: Route; label: string; icon: typeof Wallet }[] = [
-  { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+  { id: 'dashboard', label: 'Accueil', icon: LayoutDashboard },
   { id: 'patrimoine', label: 'Patrimoine', icon: Wallet },
   { id: 'analyses', label: 'Analyses', icon: ChartLine },
   { id: 'projection', label: 'Projection', icon: TrendingUp },

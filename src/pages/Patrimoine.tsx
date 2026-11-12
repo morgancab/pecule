@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Pencil, RefreshCw, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { useStore } from '../store';
 import type { Account, AccountType } from '../types';
-import { Delta, Empty, Modal, MoneyInput, Stat, fromNumber, toNumber } from '../components/ui';
+import { Delta, Empty, Modal, MoneyInput, fromNumber, toNumber } from '../components/ui';
 import { eur, fmtDate, pct, todayISO } from '../lib/format';
 import { ACCOUNT_TYPES, ASSET_GROUPS, TYPE_GROUPS, accountValue, isDebt, totals } from '../lib/networth';
 import { buildSeries, changeOver } from '../lib/analytics';
@@ -20,9 +20,6 @@ export default function Patrimoine() {
   // même référence que la page Analyses : le relevé le plus proche d'il y a 12 mois
   const c12 = changeOver(buildSeries(data.accounts), 12);
   const yearAgo = c12 ? c12.from.net : null;
-  const syncLabel = data.settings.lastSync
-    ? new Date(data.settings.lastSync).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-    : '';
 
   const groups = [
     ...ASSET_GROUPS.map((g) => ({ id: g.id as string, label: g.label, color: slotColor(chart, g.slot) })),
@@ -48,25 +45,21 @@ export default function Patrimoine() {
 
   return (
     <>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Patrimoine</h1>
-          <p className="page-sub">
-            {`Lu depuis ta feuille Google${lastDate ? ` · dernier relevé le ${fmtDate(lastDate)}` : ''}${syncLabel ? ` · synchronisé le ${syncLabel}` : ''}. Pour changer un solde, modifie la feuille.`}
-          </p>
+      <div className="card">
+        <div className="hero-label">Patrimoine net{lastDate && ` · ${fmtDate(lastDate)}`}</div>
+        <div className="stat-value" style={{ fontSize: 28 }}>
+          {eur(t.net, false)}
         </div>
-        <div className="actions desktop-only">
-          <button className="btn btn-primary" onClick={sync} disabled={syncing}>
-            <RefreshCw size={15} className={syncing ? 'spin' : ''} /> {syncing ? 'Synchronisation…' : 'Synchroniser'}
-          </button>
-        </div>
-      </div>
-
-      <div className="grid cols-4">
-        <Stat label="Patrimoine net" value={eur(t.net, false)} sub={yearAgo !== null ? <Delta value={t.net - yearAgo} ratio={yearAgo ? (t.net - yearAgo) / yearAgo : undefined} suffix={`depuis le ${fmtDate(c12!.from.date)}`} /> : undefined} />
-        <Stat label="Actifs" value={eur(t.assets, false)} />
-        <Stat label="Dettes" value={eur(t.debts, false)} />
-        <Stat label="Comptes suivis" value={String(data.accounts.length - archived.length)} sub={archived.length ? `+ ${archived.length} clôturé${archived.length > 1 ? 's' : ''}` : undefined} />
+        {yearAgo !== null && (
+          <div style={{ marginTop: 4 }}>
+            <Delta value={t.net - yearAgo} ratio={yearAgo ? (t.net - yearAgo) / yearAgo : undefined} suffix="sur 12 mois" />
+          </div>
+        )}
+        {t.debts > 0 && (
+          <div className="muted small" style={{ marginTop: 8 }}>
+            {eur(t.assets, false)} d’actifs · {eur(t.debts, false)} de dettes
+          </div>
+        )}
       </div>
 
       {!groups.length && !archived.length && (
@@ -99,41 +92,25 @@ export default function Patrimoine() {
                       const meta = ACCOUNT_TYPES[a.type];
                       const value = accountValue(a);
                       const ya = valueYearAgo(a);
-                      const last = a.history[a.history.length - 1]?.date;
                       return (
                         <tr key={a.id} style={{ cursor: 'pointer' }} onClick={() => setEditing(a)}>
                           <td>
-                            <div style={{ fontWeight: 550 }}>{a.name}</div>
+                            <div style={{ fontWeight: 500 }}>{a.name}</div>
                             <div className="muted small">
                               {meta.label}
                               {a.institution && ` · ${a.institution}`}
-                              {last && <span className="hide-sm">{` · relevé du ${fmtDate(last)}`}</span>}
                             </div>
-                          </td>
-                          <td className="num hide-sm">
-                            {a.rate ? (
-                              <div className="small text-2">
-                                {String(a.rate).replace('.', ',')} % {!isDebt(a) && <span className="muted">≈ {eur((value * a.rate) / 100, false)}/an</span>}
-                              </div>
-                            ) : ya !== null ? (
-                              <span className="small">
-                                <Delta value={value - ya} suffix="12 mois" />
-                              </span>
-                            ) : null}
                           </td>
                           <td className="num nowrap" style={{ fontWeight: 600, width: 140 }}>
                             {isDebt(a) ? '−' : ''}
                             {eur(Math.abs(value))}
-                            <div className="show-sm small" style={{ fontWeight: 400 }}>
+                            <div className="small" style={{ fontWeight: 400 }}>
                               {a.rate ? (
                                 <span className="text-2">{String(a.rate).replace('.', ',')} %</span>
                               ) : ya !== null ? (
                                 <Delta value={value - ya} />
                               ) : null}
                             </div>
-                          </td>
-                          <td className="hide-sm" style={{ width: 44 }}>
-                            <Pencil size={15} className="muted" />
                           </td>
                         </tr>
                       );
@@ -288,7 +265,7 @@ function AccountModal({ account, onClose, onSave, onDelete }: { account: Account
         <div className="full callout small">
           Solde actuel : <strong>{eur(accountValue(account))}</strong> · {account.history.length} relevé{account.history.length > 1 ? 's' : ''} depuis le{' '}
           {account.history[0] ? fmtDate(account.history[0].date) : fmtDate(todayISO())}.
-          {fromSheet ? ' Les montants viennent de ta feuille : modifie-les là-bas.' : ''}
+          {fromSheet ? ' Les montants se modifient dans ta feuille Google.' : ''}
         </div>
         <label className="row small text-2 full" style={{ cursor: 'pointer' }}>
           <input type="checkbox" checked={isArchived} onChange={(e) => setIsArchived(e.target.checked)} />

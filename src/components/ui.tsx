@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
-import { TrendingDown, TrendingUp, X } from 'lucide-react';
+import { ChevronDown, CircleCheck, Info, TrendingDown, TrendingUp, TriangleAlert, X } from 'lucide-react';
 import { eur, eurSigned, pct, pctSigned } from '../lib/format';
+import type { Finding } from '../lib/analytics';
 import { inkOn } from '../lib/theme';
 import { useStore } from '../store';
 
@@ -224,6 +225,59 @@ export function fromNumber(n: number | undefined): string {
   return String(Math.round(n * 1e8) / 1e8).replace('.', ',');
 }
 
+/** Lignes « libellé … valeur » : remplace les grappes de cartes chiffrées. */
+export function KeyRows({ rows }: { rows: { label: ReactNode; value: ReactNode; sub?: ReactNode; valueSub?: ReactNode; tone?: string }[] }) {
+  return (
+    <div className="kv">
+      {rows.map((r, i) => (
+        <div className="kv-row" key={i}>
+          <span className="kv-label">
+            {r.label}
+            {r.sub && <span className="kv-sub">{r.sub}</span>}
+          </span>
+          <span className={`kv-value ${r.tone ?? ''}`}>
+            {r.value}
+            {r.valueSub && <span className="kv-sub">{r.valueSub}</span>}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Explications de méthode, repliées par défaut. */
+export function Note({ children, title = 'Comment c’est calculé' }: { children: ReactNode; title?: string }) {
+  return (
+    <details className="note">
+      <summary>
+        <Info size={14} /> {title}
+      </summary>
+      <div className="note-body">{children}</div>
+    </details>
+  );
+}
+
+/** Points d'attention : le titre, et le détail en touchant la ligne. */
+export function FindingList({ items }: { items: Finding[] }) {
+  return (
+    <div>
+      {items.map((f) => {
+        const Icon = f.tone === 'good' ? CircleCheck : f.tone === 'info' ? Info : TriangleAlert;
+        return (
+          <details className="finding" key={f.id}>
+            <summary>
+              <Icon size={16} className={f.tone === 'alert' ? 'bad' : f.tone === 'good' ? 'good' : f.tone === 'warn' ? 'warn' : 'muted'} style={{ flex: 'none', marginTop: 2 }} />
+              <span className="grow">{f.title}</span>
+              <ChevronDown size={16} className="muted chev" />
+            </summary>
+            <div className="finding-detail">{f.detail}</div>
+          </details>
+        );
+      })}
+    </div>
+  );
+}
+
 /** Score sur 10 en anneau (couleur selon le niveau, libellé à côté : jamais la couleur seule). */
 export function ScoreRing({ score, size = 64 }: { score: number; size?: number }) {
   const r = (size - 8) / 2;
@@ -243,7 +297,7 @@ export function ScoreRing({ score, size = 64 }: { score: number; size?: number }
         strokeDasharray={`${(c * Math.max(0, Math.min(10, score))) / 10} ${c}`}
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
       />
-      <text x="50%" y="50%" dominantBaseline="central" textAnchor="middle" fontSize={size * 0.28} fontWeight={650} fill="var(--text)">
+      <text x="50%" y="50%" dominantBaseline="central" textAnchor="middle" fontSize={size * 0.28} fontWeight={600} fill="var(--text)">
         {score}
       </text>
     </svg>

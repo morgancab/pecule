@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useStore } from '../store';
 import { go } from '../App';
-import { Empty, Seg, Stat } from '../components/ui';
+import { Empty, Note, Seg } from '../components/ui';
 import { ProjectionScenarioChart } from '../components/charts';
 import { eur, eurSigned, fmtDate } from '../lib/format';
 import { ACCOUNT_TYPES, ASSET_GROUPS, totals } from '../lib/networth';
@@ -132,45 +132,51 @@ export default function Projection() {
 
   return (
     <>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Projection</h1>
-          <p className="page-sub">
-            Part de ton patrimoine au {fmtDate(last.date)} ({eur(last.net, false)}). Chaque mois : tes placements rapportent leur rendement, et ton épargne s’ajoute.
-          </p>
+      <div className="card">
+        <div className="hero-label">
+          Dans {years} ans{real ? ', en euros d’aujourd’hui' : ''}
         </div>
-        <Seg<'nominal' | 'reel'>
-          value={real ? 'reel' : 'nominal'}
-          onChange={(v) => setPrefs({ real: v === 'reel' })}
-          options={[
-            { value: 'nominal', label: 'Euros courants' },
-            { value: 'reel', label: 'Euros d’aujourd’hui' },
-          ]}
-        />
+        <div className="hero-value">{eur(end.net, false)}</div>
+        <div className="muted small" style={{ marginTop: 4 }}>
+          entre {eur(runs.prudent[runs.prudent.length - 1].net, false)} et {eur(runs.favorable[runs.favorable.length - 1].net, false)}
+          {!real && ` · dont ${eurSigned(gains, false)} de rendement`}
+        </div>
+        <div style={{ marginTop: 16 }}>
+          <ProjectionScenarioChart rows={rows} />
+        </div>
+        {years > 1 && (
+          <div className="muted small" style={{ marginTop: 8 }}>
+            Dans 1 an : {eur(at(1).net, false)}
+            {years > 5 && ` · dans 5 ans : ${eur(at(5).net, false)}`}
+          </div>
+        )}
       </div>
 
-      <div className="card">
-        <div className="row wrap" style={{ gap: 18, alignItems: 'flex-end' }}>
-          <div className="field" style={{ minWidth: 220 }}>
-            <label htmlFor="pj-monthly">
-              Épargne par mois : <strong>{eur(monthly, false)}</strong>
-            </label>
-            <input id="pj-monthly" type="range" min={0} max={5000} step={50} value={monthly} onChange={(e) => setPrefs({ monthly: Number(e.target.value) })} />
-            <span className="field-hint">
-              Estimée sur 12 mois : {eur(estimatedSavings, false)}
-              {prefs.monthly !== undefined && (
-                <button type="button" className="btn btn-sm btn-ghost" style={{ height: 20, padding: '0 6px', marginLeft: 4 }} onClick={() => setPrefs({ monthly: undefined })}>
-                  revenir
-                </button>
-              )}
-            </span>
-          </div>
-          <div className="field" style={{ minWidth: 200 }}>
-            <label htmlFor="pj-years">
-              Horizon : <strong>{years} ans</strong>
-            </label>
-            <input id="pj-years" type="range" min={1} max={30} step={1} value={years} onChange={(e) => setPrefs({ years: Number(e.target.value) })} />
-          </div>
+      <div className="card section">
+        <div className="field">
+          <label htmlFor="pj-monthly" className="row between">
+            <span>Épargne par mois</span>
+            <strong className="tnum">{eur(monthly, false)}</strong>
+          </label>
+          <input id="pj-monthly" type="range" min={0} max={5000} step={50} value={monthly} onChange={(e) => setPrefs({ monthly: Number(e.target.value) })} />
+          <span className="field-hint">
+            Ton rythme sur 12 mois : {eur(estimatedSavings, false)}
+            {prefs.monthly !== undefined && (
+              <button type="button" className="btn btn-sm btn-ghost" style={{ height: 20, padding: '0 6px', marginLeft: 4 }} onClick={() => setPrefs({ monthly: undefined })}>
+                revenir
+              </button>
+            )}
+          </span>
+        </div>
+        <div className="field" style={{ marginTop: 12 }}>
+          <label htmlFor="pj-years" className="row between">
+            <span>Horizon</span>
+            <strong className="tnum">{years} ans</strong>
+          </label>
+          <input id="pj-years" type="range" min={1} max={30} step={1} value={years} onChange={(e) => setPrefs({ years: Number(e.target.value) })} />
+        </div>
+
+        <Note title="Hypothèses">
           <div className="field">
             <label htmlFor="pj-split">Où va ton épargne</label>
             <select id="pj-split" value={splitMode} onChange={(e) => setPrefs({ split: e.target.value as SplitMode })}>
@@ -179,59 +185,46 @@ export default function Projection() {
               <option value="epargne">Sur les livrets</option>
               <option value="investissements">Investie</option>
             </select>
+            {splitMode === 'historique' && histTotal > 0 && (
+              <span className="field-hint">
+                {CLASS_IDS.filter((c) => split[c] > 0.01)
+                  .map((c) => `${LABELS[c].toLowerCase()} ${Math.round(split[c] * 100)} %`)
+                  .join(' · ')}
+              </span>
+            )}
           </div>
-          {real && numberInput(inflation, (v) => setPrefs({ inflation: v }), 0.5, 'Inflation', '%/an', 60)}
-        </div>
-        <div className="row wrap" style={{ gap: 14, marginTop: 14 }}>
-          <span className="small muted">Rendement annuel attendu :</span>
-          {CLASS_IDS.filter((c) => start[c] > 0 || split[c] > 0).map((c) => (
-            <span key={c}>{numberInput(returns[c], (v) => setPrefs({ returns: { ...(prefs.returns ?? {}), [c]: v } }), 0.5, LABELS[c], '%', 64)}</span>
-          ))}
-        </div>
-        {splitMode === 'historique' && histTotal > 0 && (
-          <div className="muted small" style={{ marginTop: 8 }}>
-            Sur 12 mois, ton épargne est allée :{' '}
-            {CLASS_IDS.filter((c) => split[c] > 0.01)
-              .map((c) => `${LABELS[c].toLowerCase()} ${Math.round(split[c] * 100)} %`)
-              .join(' · ')}
-            .
+          <div className="field-label" style={{ margin: '12px 0 8px' }}>
+            Rendement annuel attendu
           </div>
-        )}
-      </div>
-
-      <div className="grid cols-4 section">
-        <Stat label="Dans 1 an" value={eur(at(1).net, false)} sub={`scénario central${real ? ', euros d’aujourd’hui' : ''}`} />
-        <Stat label="Dans 5 ans" value={eur(at(Math.min(5, years)).net, false)} sub={years < 5 ? `(horizon ${years} ans)` : 'scénario central'} />
-        <Stat
-          label={`Dans ${years} ans`}
-          value={eur(end.net, false)}
-          sub={`entre ${eur(runs.prudent[runs.prudent.length - 1].net, false)} et ${eur(runs.favorable[runs.favorable.length - 1].net, false)}`}
-        />
-        <Stat
-          label={`D’ici ${years} ans`}
-          value={real ? eur(end.contributed, false) : eurSigned(gains, false)}
-          sub={real ? 'd’épargne versée (euros courants)' : `de rendement, en plus de ${eur(end.contributed, false)} d’épargne versée`}
-        />
-      </div>
-
-      <div className="card section">
-        <div className="card-head">
-          <div>
-            <div className="card-title">Ton patrimoine, passé et à venir</div>
-            <div className="card-sub">
-              Prudent : investissements −4 pts, crypto −15 pts · Favorable : investissements +3 pts, crypto +10 pts.
-              {linear !== null && ` Pour comparaison, au rythme linéaire des 12 derniers mois (${eurSigned(linear, false)}/mois) : ${eur(last.net + linear * 12 * years, false)} dans ${years} ans.`}
-            </div>
+          <div className="row wrap" style={{ gap: 12 }}>
+            {CLASS_IDS.filter((c) => start[c] > 0 || split[c] > 0).map((c) => (
+              <span key={c}>{numberInput(returns[c], (v) => setPrefs({ returns: { ...(prefs.returns ?? {}), [c]: v } }), 0.5, LABELS[c], '%', 64)}</span>
+            ))}
           </div>
-        </div>
-        <ProjectionScenarioChart rows={rows} />
+          <div className="row wrap" style={{ gap: 12, marginTop: 12 }}>
+            <Seg<'nominal' | 'reel'>
+              value={real ? 'reel' : 'nominal'}
+              onChange={(v) => setPrefs({ real: v === 'reel' })}
+              options={[
+                { value: 'nominal', label: 'Euros courants' },
+                { value: 'reel', label: 'Euros d’aujourd’hui' },
+              ]}
+            />
+            {real && numberInput(inflation, (v) => setPrefs({ inflation: v }), 0.5, 'Inflation', '%/an', 60)}
+          </div>
+          <p>
+            Chaque mois, tes placements rapportent leur rendement et ton épargne s’ajoute. Prudent : investissements −4 pts, crypto −15 pts. Favorable : investissements +3 pts, crypto +10 pts.
+            {linear !== null && ` Au rythme linéaire des 12 derniers mois (${eurSigned(linear, false)}/mois), tu serais à ${eur(last.net + linear * 12 * years, false)} dans ${years} ans.`}
+          </p>
+          <p>Rendements constants, dettes constantes, sans impôts ni frais. Ce n’est pas un conseil en investissement.</p>
+        </Note>
       </div>
 
       <div className="grid cols-2 section">
         <div className="card flush">
-          <div style={{ padding: '16px 18px 4px' }}>
+          <div style={{ padding: '16px 16px 4px' }}>
             <div className="card-title">Prochains paliers</div>
-            <div className="card-sub">Date à laquelle chaque montant serait atteint{real ? ' (en euros d’aujourd’hui)' : ''}</div>
+            <div className="card-sub">Date où chaque montant serait atteint</div>
           </div>
           <div className="table-wrap">
             <table className="table">
@@ -262,9 +255,9 @@ export default function Projection() {
           </div>
         </div>
         <div className="card flush">
-          <div style={{ padding: '16px 18px 4px' }}>
+          <div style={{ padding: '16px 16px 4px' }}>
             <div className="card-title">Et si…</div>
-            <div className="card-sub">Écart avec le scénario central dans {years} ans</div>
+            <div className="card-sub">Écart dans {years} ans</div>
           </div>
           <div className="table-wrap">
             <table className="table">
@@ -289,11 +282,6 @@ export default function Projection() {
           </div>
         </div>
       </div>
-
-      <p className="muted small section">
-        Simulation indicative : rendements constants, dettes constantes, sans impôts ni frais. Les marchés ne montent pas en ligne droite : la plus forte baisse de ton historique (onglet Analyses) donne un ordre
-        d’idée des à-coups. Ce n’est pas un conseil en investissement.
-      </p>
     </>
   );
 }

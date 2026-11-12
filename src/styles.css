@@ -92,7 +92,7 @@ h1,
 h2,
 h3 {
   margin: 0;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .boot {
@@ -131,7 +131,7 @@ h3 {
   gap: 10px;
   padding: 2px 10px 22px;
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 
@@ -363,7 +363,7 @@ h3 {
 }
 .hero-value {
   font-size: 52px;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.025em;
   line-height: 1.05;
   margin-top: 6px;
@@ -390,7 +390,7 @@ h3 {
 }
 .stat-value {
   font-size: 22px;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 .stat-sub {
@@ -560,7 +560,7 @@ select.input-sm {
   color: var(--text-2);
   font: inherit;
   font-size: 12.5px;
-  font-weight: 550;
+  font-weight: 500;
   cursor: pointer;
 }
 .seg button:hover {
@@ -757,7 +757,7 @@ select.input-sm {
   display: grid;
   place-items: center;
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 600;
   flex: none;
 }
 
@@ -977,7 +977,7 @@ select.input-sm {
   display: grid;
   place-items: center;
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 600;
   margin-bottom: 10px;
 }
 
@@ -1167,7 +1167,7 @@ select.input-sm {
   }
   .mobile-title {
     text-align: center;
-    font-weight: 650;
+    font-weight: 600;
     font-size: 17px;
     white-space: nowrap;
     overflow: hidden;
@@ -1233,9 +1233,9 @@ select.input-sm {
 
   /* Contenu */
   .main {
-    padding: 12px 14px calc(80px + env(safe-area-inset-bottom));
-    padding-left: max(14px, env(safe-area-inset-left));
-    padding-right: max(14px, env(safe-area-inset-right));
+    padding: 16px 16px calc(88px + env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
   }
   .page-header {
     margin-bottom: 12px;
@@ -1250,10 +1250,10 @@ select.input-sm {
     font-size: 12.5px;
   }
   .section {
-    margin-top: 14px;
+    margin-top: 16px;
   }
   .grid {
-    gap: 10px;
+    gap: 12px;
   }
   .cols-2,
   .cols-3,
@@ -1267,20 +1267,23 @@ select.input-sm {
     grid-column: auto;
   }
   .card {
-    padding: 14px;
-    border-radius: 14px;
+    padding: 16px;
+    border-radius: 16px;
+  }
+  .card.flush {
+    padding: 0;
   }
   .card.tight {
     padding: 12px;
   }
   .card-head {
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
   .stat-label {
     font-size: 12px;
   }
   .stat-value {
-    font-size: 18px;
+    font-size: 20px;
   }
   .stat-sub {
     font-size: 11.5px;
@@ -1299,7 +1302,15 @@ select.input-sm {
   }
   .table th,
   .table td {
-    padding: 9px 10px;
+    padding: 10px 8px;
+  }
+  .table th:first-child,
+  .table td:first-child {
+    padding-left: 16px;
+  }
+  .table th:last-child,
+  .table td:last-child {
+    padding-right: 16px;
   }
 
   /* Contrôles tactiles (16 px minimum : pas de zoom automatique de Safari) */
@@ -1399,22 +1410,29 @@ select.input-sm {
   }
 }
 
-/* Liste façon iOS (page « Plus ») */
+/* Liste façon iOS (page « Plus », Accueil, Réglages) */
 .ios-list {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
 }
 .ios-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 13px 14px;
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 16px;
   color: var(--text);
-  text-decoration: none;
+  background: transparent;
+  border: none;
   border-bottom: 1px solid var(--border);
-  font-size: 16px;
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
 }
 .ios-row:last-child {
   border-bottom: none;
@@ -1423,15 +1441,135 @@ select.input-sm {
   text-decoration: none;
   background: var(--surface-2);
 }
+.ios-row:disabled {
+  opacity: 0.6;
+}
+.ios-row.bad {
+  color: var(--critical-text);
+}
 .ios-icon {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
-  background: var(--accent);
-  color: #fff;
+  background: var(--surface-3);
+  color: var(--text-2);
   display: grid;
   place-items: center;
   flex: none;
+}
+.ios-icon.danger {
+  color: var(--critical-text);
+}
+
+/* Lignes libellé … valeur */
+.kv {
+  display: grid;
+}
+.kv-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.kv-row:first-child {
+  padding-top: 0;
+}
+.kv-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.kv-label {
+  color: var(--text-2);
+  min-width: 0;
+}
+.kv-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+.kv-sub {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* Explications repliées */
+details.note {
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+details.note > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  color: var(--text-2);
+  cursor: pointer;
+  list-style: none;
+}
+details.note > summary::-webkit-details-marker {
+  display: none;
+}
+.note-body {
+  padding-top: 8px;
+}
+.note-body p {
+  margin: 12px 0 0;
+}
+.note-body > p:first-child {
+  margin-top: 0;
+}
+.note-body .field + .field-label,
+.note-body .field {
+  color: var(--text-2);
+}
+
+/* Points d'attention dépliables */
+details.finding > summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 500;
+}
+details.finding > summary::-webkit-details-marker {
+  display: none;
+}
+details.finding:first-child > summary {
+  padding-top: 0;
+}
+details.finding + details.finding {
+  border-top: 1px solid var(--border);
+}
+details.finding .chev {
+  flex: none;
+  margin-top: 2px;
+  transition: transform 0.15s ease-out;
+}
+details.finding[open] .chev {
+  transform: rotate(180deg);
+}
+.finding-detail {
+  padding: 0 0 12px 28px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+/* Sélecteur d'onglet pleine largeur */
+.seg-full .seg {
+  display: flex;
+  width: 100%;
+}
+.seg-full .seg button {
+  flex: 1;
 }
 
 /* App installée (écran d'accueil) : pas de sélection de texte accidentelle sur la navigation */

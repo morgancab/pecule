@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, CircleCheck, Info, TriangleAlert } from 'lucide-react';
 import { useStore } from '../store';
 import { go } from '../App';
-import { Empty, Stat } from '../components/ui';
+import { Empty, KeyRows } from '../components/ui';
 import { eur, eurSigned, fmtDate, pct, pctSigned } from '../lib/format';
 import { decompose } from '../lib/market';
 import { buildReport } from '../lib/report';
@@ -32,12 +32,7 @@ export default function Rapports() {
 
   return (
     <>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Rapport du {fmtDate(r.date)}</h1>
-          <p className="page-sub">Depuis le relevé du {fmtDate(r.prevDate)} · un rapport par ligne de ta feuille</p>
-        </div>
-        <div className="row">
+      <div className="row between" style={{ marginBottom: 12 }}>
           <button className="icon-btn" onClick={() => setIdx(Math.max(1, index - 1))} disabled={index <= 1} aria-label="Relevé précédent">
             <ChevronLeft size={18} />
           </button>
@@ -55,19 +50,30 @@ export default function Rapports() {
           <button className="icon-btn" onClick={() => setIdx(Math.min(series.length - 1, index + 1))} disabled={index >= series.length - 1} aria-label="Relevé suivant">
             <ChevronRight size={18} />
           </button>
-        </div>
       </div>
 
       <div className="card">
-        <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6 }}>{r.summary}</p>
-        {loading && <p className="muted small">Chargement des cours pour le détail épargne / marchés…</p>}
-      </div>
-
-      <div className="grid cols-4 section">
-        <Stat label="Variation" value={<span className={r.delta >= 0 ? 'good' : 'bad'}>{eurSigned(r.delta, false)}</span>} sub={`${pctSigned(r.ratio)} · ${r.rank}e sur ${r.count} relevés`} />
-        <Stat label="Épargne (estimée)" value={r.period ? eurSigned(r.period.savings, false) : '…'} sub="argent nouveau sur la période" />
-        <Stat label="Marchés" value={r.period ? <span className={r.period.market >= 0 ? 'good' : 'bad'}>{eurSigned(r.period.market, false)}</span> : '…'} sub="effet des cours (Amazon, MSCI World, Bitcoin)" />
-        <Stat label="Moyenne des 12 relevés précédents" value={r.avg12 !== null ? eurSigned(r.avg12, false) : '—'} sub={r.avg12 !== null ? (r.delta >= r.avg12 ? 'ce relevé fait mieux' : 'ce relevé fait moins bien') : undefined} />
+        <div className="hero-label">Depuis le {fmtDate(r.prevDate)}</div>
+        <div className={`stat-value ${r.delta >= 0 ? 'good' : 'bad'}`} style={{ fontSize: 28 }}>
+          {eurSigned(r.delta, false)}
+        </div>
+        <div className="muted small" style={{ marginTop: 4 }}>
+          {pctSigned(r.ratio)} · patrimoine net {eur(r.net, false)}
+        </div>
+        <div style={{ marginTop: 16 }}>
+          <KeyRows
+            rows={[
+              { label: 'Épargne estimée', value: r.period ? eurSigned(r.period.savings, false) : '…' },
+              { label: 'Effet des marchés', value: r.period ? eurSigned(r.period.market, false) : '…', tone: r.period ? (r.period.market >= 0 ? 'good' : 'bad') : '' },
+              {
+                label: 'Moyenne des 12 relevés précédents',
+                sub: r.avg12 !== null ? (r.delta >= r.avg12 ? 'ce relevé fait mieux' : 'ce relevé fait moins bien') : undefined,
+                value: r.avg12 !== null ? eurSigned(r.avg12, false) : '—',
+              },
+            ]}
+          />
+        </div>
+        {loading && <p className="muted small">Chargement des cours…</p>}
       </div>
 
       <div className="grid cols-2 section">
@@ -136,8 +142,6 @@ export default function Rapports() {
           })}
         </div>
       )}
-
-      <p className="muted small section">Patrimoine net à cette date : {eur(r.net, false)}. Le détail épargne / marchés est une estimation à partir des cours publics.</p>
     </>
   );
 }

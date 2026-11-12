@@ -21,74 +21,60 @@ export default function Reglages() {
 
   return (
     <>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Réglages</h1>
-          <p className="page-sub">Tes soldes viennent de ta feuille Google ; tes réglages (noms, types, références, préférences) sont enregistrés dans ton compte Google par ton script.</p>
-        </div>
+      <div className="section-title">Apparence</div>
+      <Seg<ThemePref>
+        value={data.settings.theme}
+        onChange={(theme) => update((d) => ({ ...d, settings: { ...d.settings, theme } }))}
+        options={[
+          { value: 'dark', label: 'Sombre' },
+          { value: 'light', label: 'Clair' },
+          { value: 'system', label: 'Système' },
+        ]}
+      />
+
+      <div className="section-title section">Données</div>
+      <div className="ios-list">
+        <button
+          className="ios-row"
+          disabled={syncing}
+          onClick={() =>
+            sync()
+              .then(notify)
+              .catch((e) => notify(`Feuille Google : ${(e as Error).message}`))
+          }
+        >
+          <span className="ios-icon">
+            <RefreshCw size={18} className={syncing ? 'spin' : ''} />
+          </span>
+          <span className="grow">
+            Synchroniser la feuille
+            <span className="kv-sub">
+              Dernière fois : {lastSync}
+              {saveState === 'error' && <span className="bad"> · réglages non enregistrés</span>}
+            </span>
+          </span>
+        </button>
+        <button className="ios-row" onClick={exportJSON}>
+          <span className="ios-icon">
+            <Download size={18} />
+          </span>
+          <span className="grow">
+            Exporter mes données
+            <span className="kv-sub">Comptes, historique et réglages en JSON</span>
+          </span>
+        </button>
       </div>
 
-      <div className="grid cols-2">
-        <div className="card">
-          <div className="card-title" style={{ marginBottom: 12 }}>
-            Apparence
-          </div>
-          <Seg<ThemePref>
-            value={data.settings.theme}
-            onChange={(theme) => update((d) => ({ ...d, settings: { ...d.settings, theme } }))}
-            options={[
-              { value: 'dark', label: 'Sombre' },
-              { value: 'light', label: 'Clair' },
-              { value: 'system', label: 'Système' },
-            ]}
-          />
-        </div>
-
-        <div className="card">
-          <div className="card-title" style={{ marginBottom: 6 }}>
-            Feuille Google
-          </div>
-          <p className="muted small" style={{ marginTop: 0 }}>
-            Dernière synchronisation : {lastSync}
-            {saveState === 'error' && <span className="bad"> · réglages non enregistrés</span>}
-          </p>
-          <button
-            className="btn"
-            disabled={syncing}
-            onClick={() =>
-              sync()
-                .then(notify)
-                .catch((e) => notify(`Feuille Google : ${(e as Error).message}`))
-            }
-          >
-            <RefreshCw size={15} className={syncing ? 'spin' : ''} /> Synchroniser
-          </button>
-        </div>
-      </div>
-
-      <div className="grid cols-2 section">
-        <div className="card">
-          <div className="card-title" style={{ marginBottom: 6 }}>
-            Sécurité
-          </div>
-          <p className="muted small" style={{ marginTop: 0 }}>
-            Accès protégé par mot de passe. Se déconnecter efface aussi la copie des données gardée sur cet appareil.
-          </p>
-          <button className="btn btn-danger" onClick={() => confirm('Se déconnecter de cet appareil ?') && logout()}>
-            <LogOut size={15} /> Se déconnecter
-          </button>
-        </div>
-        <div className="card">
-          <div className="card-title" style={{ marginBottom: 6 }}>
-            Sauvegarde
-          </div>
-          <p className="muted small" style={{ marginTop: 0 }}>
-            Ta feuille reste la source. L’export contient les comptes, l’historique et tes réglages au format JSON.
-          </p>
-          <button className="btn" onClick={exportJSON}>
-            <Download size={15} /> Exporter (JSON)
-          </button>
-        </div>
+      <div className="ios-list section">
+        <button className="ios-row bad" onClick={() => confirm('Se déconnecter de cet appareil ?') && logout()}>
+          <span className="ios-icon danger">
+            <LogOut size={18} />
+          </span>
+          <span className="grow">
+            Se déconnecter
+            <span className="kv-sub">Efface aussi la copie gardée sur cet appareil</span>
+          </span>
+        </button>
       </div>
     </>
   );
