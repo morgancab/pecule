@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useStore } from '../store';
-import { KeyRows, Note, RankBars } from '../components/ui';
-import { AgeRanges, PercentileGauge } from '../components/compare';
-import { amountsHidden, eur } from '../lib/format';
+import { KeyRows, Note, Seg } from '../components/ui';
+import { BellChart } from '../components/compare';
+import { eur } from '../lib/format';
 import { totals } from '../lib/networth';
 import { INSEE_2024, percentileIn } from '../lib/insights';
 
@@ -10,6 +10,7 @@ import { INSEE_2024, percentileIn } from '../lib/insights';
 export default function Comparaison() {
   const { data, update } = useStore();
   const [editing, setEditing] = useState(false);
+  const [scope, setScope] = useState<'age' | 'tous'>('age');
   const thisYear = new Date().getFullYear();
   const birthYear = data.settings.birthYear;
 
@@ -18,81 +19,55 @@ export default function Comparaison() {
   }
 
   const age = thisYear - birthYear;
-  const b = INSEE_2024.rows.find((r) => age >= r.min && age <= r.max) ?? INSEE_2024.rows[0];
+  const bracket = INSEE_2024.rows.find((r) => age >= r.min && age <= r.max) ?? INSEE_2024.rows[0];
+  const ref = scope === 'age' ? bracket : INSEE_2024.all;
   const mine = totals(data.accounts).assets; // l'INSEE mesure le patrimoine BRUT (dettes non déduites)
-  const pos = percentileIn(mine, b);
-  const posAll = percentileIn(mine, INSEE_2024.all);
-  const headline = pos.above9 ? 'Dans les 10 % les plus aisés' : pos.below1 ? 'Parmi les 10 % les plus modestes' : `Devant ${Math.round(pos.p)} % des ménages`;
-  const byBracket = INSEE_2024.rows.map((r) => ({ r, pos: percentileIn(mine, r) }));
+  const p = Math.round(percentileIn(mine, ref).p);
+  const who = scope === 'age' ? `des ménages de ${bracket.label.toLowerCase()}` : 'des ménages français';
 
   return (
     <>
-      <div className="card">
-        <div className="hero-label">
-          Ménages de {b.label.toLowerCase()} · tu as {age} ans
-        </div>
-        <div style={{ margin: '12px 0 4px' }}>
-          <PercentileGauge p={pos.above9 ? 95 : pos.p} label={pos.above9 ? 'au-delà du 9e décile' : 'des ménages de ton âge ont moins'} />
-        </div>
-        {(pos.above9 || pos.below1) && (
-          <div className="stat-value" style={{ textAlign: 'center' }}>
-            {headline}
-          </div>
-        )}
-        <p className="muted small" style={{ margin: '4px 0 0', textAlign: 'center' }}>
-          Estimation d’après l’INSEE
-        </p>
-      </div>
-
-      <div className="card section">
-        <div className="card-head">
-          <div>
-            <div className="card-title">Toi face à chaque âge</div>
-            <div className="card-sub">Trait : du 1er au 9e décile · point : médiane</div>
-          </div>
-        </div>
-        <AgeRanges rows={INSEE_2024.rows} mine={mine} current={b.id} />
-      </div>
-
-      <div className="card section">
-        <div className="card-head">
-          <div>
-            <div className="card-title">Ta position dans chaque tranche</div>
-            <div className="card-sub">Part des ménages qui ont moins que toi</div>
-          </div>
-        </div>
-        <RankBars
-          rows={byBracket.map(({ r, pos: p }) => ({
-            id: r.id,
-            label: r.id === b.id ? <strong>{r.label}</strong> : r.label,
-            value: p.above9 ? 90 : p.p,
-            dim: r.id !== b.id,
-            display: p.above9 ? '> 90 %' : p.below1 ? '< 10 %' : `${Math.round(p.p)} %`,
-          }))}
-          max={100}
-        />
-      </div>
-
-      <div className="card section">
-        <div className="card-head">
-          <div className="card-title">Repères de ta tranche</div>
-        </div>
-        <KeyRows
-          rows={[
-            { label: 'Patrimoine médian', sub: 'la moitié des ménages a moins', value: eur(b.median, false), valueSub: amountsHidden() ? undefined : `toi : ${(mine / b.median).toFixed(1).replace('.', ',')} × la médiane` },
-            { label: 'Patrimoine moyen', sub: 'tiré vers le haut par les plus aisés', value: eur(b.mean, false) },
-            { label: '10 % les plus aisés', sub: 'à partir de', value: eur(b.d9, false) },
-            {
-              label: 'Tous âges confondus',
-              sub: `médiane : ${eur(INSEE_2024.all.median, false)}`,
-              value: posAll.above9 ? '> 90 %' : `${Math.round(posAll.p)} %`,
-              valueSub: 'ont moins que toi',
-            },
+      <div className="seg-full" style={{ marginBottom: 16 }}>
+        <Seg<'age' | 'tous'>
+          value={scope}
+          onChange={setScope}
+          options={[
+            { value: 'age', label: `Ton âge (${age} ans)` },
+            { value: 'tous', label: 'Tous âges' },
           ]}
         />
       </div>
 
-      <Note title="Source et limites">
+      <div className="card">
+        <div className="hero-label">Tu as plus que</div>
+        <div className="hero-value">{p} %</div>
+        <div className="muted small" style={{ marginTop: 4 }}>
+          {who}
+        </div>
+        <div style={{ marginTop: 20 }}>
+          <BellChart bracket={ref} mine={mine} />
+        </div>
+        <div className="legend-inline" style={{ marginTop: 8 }}>
+          <span>
+            <span className="swatch" style={{ background: 'var(--accent)', opacity: 0.5 }} /> Ont moins que toi
+          </span>
+          <span>
+            <span className="swatch" style={{ background: 'var(--muted)', opacity: 0.5 }} /> Ont plus
+          </span>
+        </div>
+      </div>
+
+      <div className="card section">
+        <KeyRows
+          rows={[
+            { label: 'Patrimoine médian', sub: 'la moitié des ménages a moins', value: eur(ref.median, false) },
+            { label: '10 % les plus aisés', sub: 'à partir de', value: eur(ref.d9, false) },
+            { label: '10 % les plus modestes', sub: 'en dessous de', value: eur(ref.d1, false) },
+          ]}
+        />
+      </div>
+
+      <Note title="Source et méthode">
         <p>
           INSEE, enquête Histoire de vie et Patrimoine, début 2024 :{' '}
           <a href={INSEE_2024.source} target="_blank" rel="noreferrer noopener">
@@ -101,8 +76,11 @@ export default function Comparaison() {
           . Ménage classé selon l’âge de la personne qui apporte le plus de revenus.
         </p>
         <p>
-          C’est le patrimoine de tout le ménage, immobilier compris, dettes non déduites. Le tien est celui de ta feuille ({eur(mine, false)} d’actifs). Ta position est estimée en
-          interpolant entre les déciles publiés : c’est un ordre de grandeur.
+          L’INSEE publie trois repères par tranche (1er décile, médiane, 9e décile). La courbe en est déduite, en échelle logarithmique, et passe exactement par ces repères : c’est une
+          estimation de la forme réelle.
+        </p>
+        <p>
+          C’est le patrimoine de tout le ménage, immobilier compris, dettes non déduites. Le tien est celui de ta feuille ({eur(mine, false)} d’actifs).
         </p>
         <button className="btn btn-sm" style={{ marginTop: 12 }} onClick={() => setEditing(true)}>
           Modifier mon année de naissance ({birthYear})

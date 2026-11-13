@@ -2012,12 +2012,13 @@ details.finding[open] .chev {
     animation: none;
   }
 }
-.gauge-arc {
-  stroke-dasharray: 1;
-  animation: wrap-draw 1s 0.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+.bell-bar {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: wrap-grow 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 @media (prefers-reduced-motion: reduce) {
-  .gauge-arc {
+  .bell-bar {
     animation: none;
   }
 }

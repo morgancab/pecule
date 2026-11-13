@@ -166,10 +166,33 @@ export const INSEE_2024 = {
   all: { label: 'Ensemble des ménages', mean: 374900, d1: 6200, median: 205100, d9: 857700 },
 };
 
-/** Position estimée (centile) par interpolation logarithmique entre 1er décile, médiane et 9e décile. */
+/**
+ * Forme de la distribution reconstruite à partir des trois repères publiés (1er décile, médiane, 9e décile) :
+ * en échelle logarithmique, une demi-courbe de Gauss de chaque côté de la médiane, chacune avec sa largeur,
+ * pour passer exactement par les trois repères (le patrimoine est très étalé vers le bas).
+ */
+const Z90 = 1.2815516; // quantile 90 % de la loi normale
+
+function phi(z: number): number {
+  // fonction de répartition de la loi normale (approximation d'Abramowitz et Stegun, erreur < 1e-7)
+  const t = 1 / (1 + 0.3275911 * (Math.abs(z) / Math.SQRT2));
+  const y = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-(z * z) / 2);
+  return z >= 0 ? (1 + y) / 2 : (1 - y) / 2;
+}
+
+export function wealthModel(b: { d1: number; median: number; d9: number }) {
+  const mu = Math.log(b.median);
+  const sLow = (mu - Math.log(b.d1)) / Z90;
+  const sHigh = (Math.log(b.d9) - mu) / Z90;
+  const cdf = (v: number) => {
+    const x = Math.log(Math.max(1, v));
+    return x < mu ? phi((x - mu) / sLow) : phi((x - mu) / sHigh);
+  };
+  return { mu, sLow, sHigh, cdf };
+}
+
+/** Position estimée : part des ménages qui ont moins (lue sur la même courbe que le graphique). */
 export function percentileIn(v: number, b: { d1: number; median: number; d9: number }): { p: number; above9: boolean; below1: boolean } {
-  if (v >= b.d9) return { p: 90, above9: true, below1: false };
-  if (v <= b.d1) return { p: Math.max(0, (10 * v) / b.d1), above9: false, below1: true };
-  const [lo, hi, p0] = v < b.median ? [b.d1, b.median, 10] : [b.median, b.d9, 50];
-  return { p: p0 + (40 * Math.log(v / lo)) / Math.log(hi / lo), above9: false, below1: false };
+  const p = 100 * wealthModel(b).cdf(v);
+  return { p: Math.min(99.5, p), above9: v >= b.d9, below1: v <= b.d1 };
 }
